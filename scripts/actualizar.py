@@ -23,26 +23,48 @@ def num(s):
         return None
 
 
-def descargar(prov):
+TODAS_LAS_PROVINCIAS = [f"{i:02d}" for i in range(1, 53)]
+
+
+def descargar(prov, timeout=60, intentos=3, obligatorio=True):
     url = BASE + ("FiltroProvincia/" + prov if prov else "")
     req = urllib.request.Request(url, headers={
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (repostaje-giulia)",
     })
-    for intento in range(3):
+    for intento in range(intentos):
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read().decode("utf-8"))
         except Exception as e:  # noqa: BLE001
             print(f"Provincia {prov or 'todas'}, intento {intento + 1}: {e}", file=sys.stderr)
-            time.sleep(10)
-    raise SystemExit(f"No se pudo descargar la provincia {prov}")
+            time.sleep(5)
+    if obligatorio:
+        raise SystemExit(f"No se pudo descargar la provincia {prov or 'todas'}")
+    return None
+
+
+def descargar_todo():
+    """Intenta toda España de una vez; si el servidor tarda demasiado, va provincia a provincia."""
+    if PROVINCIAS:
+        return [descargar(p) for p in PROVINCIAS]
+    datos = descargar("", timeout=240, intentos=2, obligatorio=False)
+    if datos and datos.get("ListaEESSPrecio"):
+        return [datos]
+    print("Descarga completa fallida; probando provincia a provincia", file=sys.stderr)
+    partes = []
+    for p in TODAS_LAS_PROVINCIAS:
+        d = descargar(p, timeout=90, intentos=3, obligatorio=False)
+        if d:
+            partes.append(d)
+    if len(partes) < 40:
+        raise SystemExit(f"Solo se han podido descargar {len(partes)} provincias de 52")
+    return partes
 
 
 def main():
     estaciones, fecha = [], ""
-    for prov in (PROVINCIAS or [""]):
-        datos = descargar(prov)
+    for datos in descargar_todo():
         fecha = datos.get("Fecha", fecha)
         for e in datos.get("ListaEESSPrecio", []):
             lat, lon = num(e.get("Latitud")), num(e.get("Longitud (WGS84)"))
