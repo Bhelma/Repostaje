@@ -530,7 +530,7 @@
     if (marcasHechas === datos) return;
     marcasHechas = datos;
     const cuenta = new Map();
-    todas.forEach(c => cuenta.set(c.marca, (cuenta.get(c.marca) || 0) + 1));
+    todas.filter(c => c.km <= 150).forEach(c => cuenta.set(c.marca, (cuenta.get(c.marca) || 0) + 1));
     const lista = [...cuenta.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 250);
     const dl = $('brandOptions'); dl.innerHTML = '';
     lista.forEach(([m, n]) => { const o = document.createElement('option'); o.value = m; o.label = n + ' gasolineras'; dl.appendChild(o); });
@@ -551,19 +551,20 @@
       .sort((a, b) => a.km - b.km);
     pintarMarcas(todas);
     pintarZona(todas);
-    const deMarca = todas.filter(c => coincide(c));
+    const RADIO_MARCA = 150;
+    const deMarca = todas.filter(c => coincide(c) && (!marcaFiltro || c.km <= RADIO_MARCA));
     const cerca = deMarca.filter(c => c.e[fuel]).slice(0, 15);
     const ul = $('stList'); ul.innerHTML = '';
     if (!cerca.length) {
       $('nearMeta').textContent = marcaFiltro
-        ? (deMarca.length ? 'Hay gasolineras de "' + marcaFiltro + '", pero ninguna vende ese combustible. Prueba con el otro.' : 'No hay ninguna gasolinera "' + marcaFiltro + '" en los datos de hoy. Puede que haya cambiado de nombre o cerrado.')
+        ? (deMarca.length ? 'Hay gasolineras de "' + marcaFiltro + '" a menos de 150 km, pero ninguna vende ese combustible. Prueba con el otro.' : 'No hay ninguna gasolinera "' + marcaFiltro + '" a menos de 150 km según los datos de hoy. Puede que haya cambiado de nombre o cerrado.')
         : 'No hay gasolineras con ese combustible en los datos.';
       return;
     }
     const min = Math.min(...cerca.map(c => c.e[fuel]));
     const lejos = cerca[0].km >= 30;
     $('nearMeta').textContent = (marcaFiltro
-      ? 'Las ' + cerca.length + ' más cercanas que coinciden con "' + marcaFiltro + '" (hay ' + deMarca.length + ' en total)' + (lejos ? '; la más cercana está a ' + fmt(cerca[0].km, 0) + ' km' : '')
+      ? 'Las ' + cerca.length + ' más cercanas que coinciden con "' + marcaFiltro + '" (hay ' + deMarca.length + ' a menos de 150 km)' + (lejos ? '; la más cercana está a ' + fmt(cerca[0].km, 0) + ' km' : '')
       : 'Las ' + cerca.length + ' más cercanas') + '. Datos del Ministerio del ' + datos.fecha + '. Toca una para usar su precio.';
     cerca.forEach(({ e, km }) => {
       const li = document.createElement('li');
