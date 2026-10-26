@@ -1,7 +1,7 @@
 """Descarga los precios de carburantes del Ministerio y guarda un JSON ligero.
 
-Por defecto descarga TODA España (unas 11.500 gasolineras), para poder buscar marcas lejos de casa.
-Si prefieres solo algunas provincias, pon sus códigos INE en PROVINCIAS (46 Valencia, 12 Castellón, 03 Alicante...).
+Descarga las provincias que quedan a unos 150 km de Valencia. Para cambiar la zona, edita PROVINCIAS
+con los códigos INE (46 Valencia, 12 Castellón, 03 Alicante...). Lista vacía = toda España (mucho más lento).
 """
 import json
 import os
@@ -9,7 +9,7 @@ import sys
 import time
 import urllib.request
 
-PROVINCIAS = []  # vacío = toda España
+PROVINCIAS = ["46", "12", "03", "16", "02", "44", "30"]  # Valencia, Castellón, Alicante, Cuenca, Albacete, Teruel, Murcia
 BASE = ("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/"
         "PreciosCarburantes/EstacionesTerrestres/")
 SALIDA = os.path.join(os.path.dirname(__file__), "..", "data", "precios.json")
@@ -47,7 +47,10 @@ def descargar(prov, timeout=60, intentos=3, obligatorio=True):
 def descargar_todo():
     """Intenta toda España de una vez; si el servidor tarda demasiado, va provincia a provincia."""
     if PROVINCIAS:
-        return [descargar(p) for p in PROVINCIAS]
+        partes = [d for d in (descargar(p, timeout=90, obligatorio=False) for p in PROVINCIAS) if d]
+        if not partes:
+            raise SystemExit("No se ha podido descargar ninguna provincia")
+        return partes
     datos = descargar("", timeout=240, intentos=2, obligatorio=False)
     if datos and datos.get("ListaEESSPrecio"):
         return [datos]
