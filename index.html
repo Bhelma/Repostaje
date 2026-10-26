@@ -153,6 +153,25 @@
   .h-item .addr { color: var(--muted); font-size: .92rem; grid-column: 1; }
   .h-item .price { font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; grid-row: span 2; }
   .h-del { grid-row: span 2; font: inherit; font-size: 1.1rem; background: none; border: 0; color: var(--muted); padding: 6px 8px; cursor: pointer; }
+  .brand-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .brand-row span { color: var(--muted); font-size: .95rem; flex: none; }
+  .brand-row select, .save select { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .st .alt { color: var(--muted); font-size: .85rem; text-align: right; font-variant-numeric: tabular-nums; }
+  .save-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+  .save .field input.txt { font-size: 1.15rem; font-weight: 600; }
+  .cmp-tabs { margin-top: 10px; }
+  .cmp-note { color: var(--muted); font-size: .95rem; margin: 10px 0 0; }
+  .cmp-note b { color: var(--ink); }
+  .cmp-big { margin: 12px 0 0; font-size: 1.08rem; }
+  .cmp-big b { color: var(--red); }
+  .tbl-wrap { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: .98rem; font-variant-numeric: tabular-nums; }
+  table.cmp th { text-align: right; color: var(--muted); font-weight: 600; font-size: .88rem; padding: 6px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.cmp th:first-child, table.cmp td:first-child { text-align: left; }
+  table.cmp td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.cmp td:first-child { font-weight: 600; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; }
+  table.cmp td.best { color: var(--red); font-weight: 700; }
+  table.cmp caption { text-align: left; font-weight: 700; font-size: 1.02rem; padding: 12px 0 2px; }
   .sync { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
   .sync-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .sync-head h3 { margin: 0; font-size: 1.1rem; }
@@ -258,6 +277,17 @@
       <span>Cuentakilómetros (opcional, para calcular el consumo)</span>
       <div class="row"><input id="km" type="text" inputmode="numeric" placeholder="45230" autocomplete="off"><em>km</em></div>
     </label>
+    <div class="save-row">
+      <label class="field">
+        <span>Gasolinera</span>
+        <div class="row"><input id="estInput" class="txt" type="text" list="marcasList" placeholder="Repsol, Aldaia" autocomplete="off"></div>
+      </label>
+      <div class="toggle" id="saveFuel" role="group" aria-label="Combustible que echas">
+        <button type="button" data-f="5">Diésel</button>
+        <button type="button" data-f="6">Diésel+</button>
+      </div>
+    </div>
+    <datalist id="marcasList"></datalist>
     <button type="button" class="near-btn" id="saveBtn">Guardar repostaje</button>
     <p class="near-meta" id="saveMsg"></p>
   </div>
@@ -271,8 +301,21 @@
       </div>
     </div>
     <button type="button" class="near-btn" id="nearBtn">Buscar cerca de mí</button>
+    <label class="brand-row" id="brandRow" hidden><span>Marca</span><select id="brandSel"><option value="">Todas las marcas</option></select></label>
     <p class="near-meta" id="nearMeta"></p>
     <ul class="st-list" id="stList"></ul>
+  </section>
+
+  <section class="near" id="cmp">
+    <div class="near-head">
+      <h2>Comparativas</h2>
+      <div class="toggle cmp-tabs" id="cmpTabs" role="group" aria-label="Qué comparar">
+        <button type="button" data-t="zona">Precios cerca</button>
+        <button type="button" data-t="mios">Mis repostajes</button>
+      </div>
+    </div>
+    <div id="cmpZona"><p class="cmp-note">Pulsa "Buscar cerca de mí" en Gasolineras cercanas para comparar diésel y diésel+ por marca en tu zona.</p></div>
+    <div id="cmpMios" hidden></div>
   </section>
 
   <section class="near" id="hist">
@@ -440,8 +483,17 @@
 
   // ---- Gasolineras cercanas ----
   let fuel = Number(store.get('fuel')) || 5;
-  let datos = null, pos = null, estacionSel = '';
-  precio.addEventListener('input', () => { estacionSel = ''; });
+  let datos = null, pos = null, marcaFiltro = store.get('marcaFiltro') || '';
+  const MARCAS = [['REPSOL','Repsol'],['CEPSA','Cepsa / Moeve'],['MOEVE','Cepsa / Moeve'],['CAMPSA','Repsol'],['PETRONOR','Petronor'],
+    ['SHELL','Shell'],['GALP','Galp'],['PLENOIL','Plenoil'],['BALLENOIL','Ballenoil'],['PETROPRIX','Petroprix'],['AVIA','Avia'],
+    ['DISA','Disa'],['CARREFOUR','Carrefour'],['ALCAMPO','Alcampo'],['EROSKI','Eroski'],['BONAREA','bonÀrea'],['TAMOIL','Tamoil'],
+    ['ESCLATOIL','Esclatoil'],['MAKRO','Makro'],['COSTCO','Costco'],['LOW COST','Low Cost'],['PETROCAT','Petrocat'],['Q8','Q8'],['BP','BP']];
+  function marcaDe(rotulo) {
+    const r = ' ' + (rotulo || '').toUpperCase().replace(/[^A-Z0-9À-Ü ]/g, ' ') + ' ';
+    for (const [k, v] of MARCAS) if (r.includes(' ' + k + ' ') || (k.length > 3 && r.includes(k))) return v;
+    const t = (rotulo || '').trim();
+    return t ? cap1(t) : 'Sin marca';
+  }
   const setFuel = f => {
     fuel = f; store.set('fuel', String(f));
     document.querySelectorAll('#fuelToggle button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f));
@@ -449,8 +501,16 @@
   setFuel(fuel);
   $('fuelToggle').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    setFuel(Number(b.dataset.f)); if (datos && pos) pintar();
+    setFuel(Number(b.dataset.f)); setSaveFuel(Number(b.dataset.f)); if (datos && pos) pintar();
   });
+  let saveFuel = fuel;
+  function setSaveFuel(f) {
+    saveFuel = f;
+    document.querySelectorAll('#saveFuel button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f));
+  }
+  setSaveFuel(fuel);
+  $('saveFuel').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSaveFuel(Number(b.dataset.f)); });
+  $('brandSel').addEventListener('change', () => { marcaFiltro = $('brandSel').value; store.set('marcaFiltro', marcaFiltro); pintar(); });
 
   const dist = (a, b, c, d) => {
     const R = 6371, r = Math.PI / 180;
@@ -459,16 +519,33 @@
   };
   const cap1 = t => t.toLowerCase().replace(/(^|\s|\/)\S/g, m => m.toUpperCase());
 
+  function pintarMarcas(todas) {
+    const cuenta = new Map();
+    todas.filter(c => c.km < 25).forEach(c => cuenta.set(c.marca, (cuenta.get(c.marca) || 0) + 1));
+    const lista = [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    const sel = $('brandSel'); sel.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Todas las marcas'; sel.appendChild(o0);
+    lista.forEach(([m, n]) => { const o = document.createElement('option'); o.value = m; o.textContent = m + ' (' + n + ')'; sel.appendChild(o); });
+    if (marcaFiltro && !cuenta.has(marcaFiltro)) { marcaFiltro = ''; store.set('marcaFiltro', ''); }
+    sel.value = marcaFiltro;
+    $('brandRow').hidden = false;
+    const dl = $('marcasList'); dl.innerHTML = '';
+    lista.slice(0, 40).forEach(([m]) => { const o = document.createElement('option'); o.value = m; dl.appendChild(o); });
+  }
+
   function pintar() {
-    const cerca = datos.estaciones
-      .filter(e => e[fuel])
-      .map(e => ({ e, km: dist(pos.lat, pos.lon, e[3], e[4]) }))
-      .sort((a, b) => a.km - b.km)
+    const todas = datos.estaciones
+      .map(e => ({ e, marca: marcaDe(e[0]), km: dist(pos.lat, pos.lon, e[3], e[4]) }))
+      .sort((a, b) => a.km - b.km);
+    pintarMarcas(todas);
+    pintarZona(todas);
+    const cerca = todas
+      .filter(c => c.e[fuel] && (!marcaFiltro || c.marca === marcaFiltro))
       .slice(0, 15);
     const ul = $('stList'); ul.innerHTML = '';
-    if (!cerca.length) { $('nearMeta').textContent = 'No hay gasolineras con ese combustible en los datos.'; return; }
+    if (!cerca.length) { $('nearMeta').textContent = 'No hay gasolineras de esa marca con ese combustible cerca.'; return; }
     const min = Math.min(...cerca.map(c => c.e[fuel]));
-    $('nearMeta').textContent = 'Las 15 más cercanas. Precios del Ministerio, ' + datos.fecha + '. Toca una para usar su precio.';
+    $('nearMeta').textContent = 'Las ' + cerca.length + ' más cercanas' + (marcaFiltro ? ' de ' + marcaFiltro : '') + '. Precios del Ministerio, ' + datos.fecha + '. Toca una para usar su precio.';
     cerca.forEach(({ e, km }) => {
       const li = document.createElement('li');
       const b = document.createElement('button'); b.type = 'button'; b.className = 'st';
@@ -477,11 +554,15 @@
       pr.textContent = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €';
       const a = document.createElement('span'); a.className = 'addr';
       a.textContent = (km < 1 ? Math.round(km * 1000) + ' m' : fmt(km, 1) + ' km') + ', ' + cap1(e[1]) + ', ' + cap1(e[2]);
-      b.append(n, pr, a);
+      const otro = fuel === 5 ? 6 : 5;
+      const alt = document.createElement('span'); alt.className = 'alt';
+      alt.textContent = e[otro] ? (otro === 6 ? 'Diésel+ ' : 'Diésel ') + e[otro].toLocaleString('es-ES', { minimumFractionDigits: 3 }) : '';
+      b.append(n, pr, a, alt);
       b.addEventListener('click', () => {
         precio.value = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 });
         store.set('precio', precio.value);
-        estacionSel = cap1(e[0] || 'Sin nombre') + ', ' + cap1(e[2]);
+        $('estInput').value = marcaDe(e[0]) + ', ' + cap1(e[2]);
+        setSaveFuel(fuel);
         document.querySelectorAll('.st').forEach(x => x.classList.remove('sel'));
         b.classList.add('sel');
         render();
@@ -547,6 +628,7 @@
   }
 
   function pintarHist() {
+    if (typeof pintarMios === 'function') try { pintarMios(); } catch (e) {}
     const arr = leer().sort((a, b) => b.fecha.localeCompare(a.fecha));
     const now = new Date(), mes = now.toISOString().slice(0, 7);
     const delMes = arr.filter(x => x.fecha.slice(0, 7) === mes);
@@ -581,13 +663,15 @@
     if (!(p > 0 && m > 0)) { msg.textContent = 'Pon el precio y el importe antes de guardar.'; return; }
     const arr = leer();
     arr.push({
-      id: Date.now().toString(36), fecha: new Date().toISOString(), estacion: estacionSel,
+      id: Date.now().toString(36), fecha: new Date().toISOString(), estacion: $('estInput').value.trim(),
+      marca: $('estInput').value.trim() ? marcaDe($('estInput').value.split(',')[0]) : '',
+      combustible: saveFuel === 6 ? 'P' : 'A',
       precio: p, importe: m, litros: Math.round(m / p * 100) / 100,
       nivel: Number(nivel.value), cap, km: k > 0 ? Math.round(k) : null
     });
     guardar(arr);
     msg.textContent = 'Guardado: ' + fmt(m / p) + ' L por ' + eur(m) + '.';
-    importe.value = ''; $('km').value = ''; render(); pintarHist();
+    importe.value = ''; $('km').value = ''; $('estInput').value = ''; render(); pintarHist();
   });
 
   function descargar(nombre, texto, tipo) {
@@ -598,9 +682,9 @@
   }
   const hoy = () => new Date().toISOString().slice(0, 10);
   $('hCsv').addEventListener('click', () => {
-    const filas = [['Fecha', 'Gasolinera', 'Precio €/L', 'Importe €', 'Litros', 'Nivel antes %', 'Km']];
+    const filas = [['Fecha', 'Gasolinera', 'Marca', 'Combustible', 'Precio €/L', 'Importe €', 'Litros', 'Nivel antes %', 'Km']];
     leer().sort((a, b) => a.fecha.localeCompare(b.fecha)).forEach(x => filas.push([
-      new Date(x.fecha).toLocaleString('es-ES'), x.estacion || '',
+      new Date(x.fecha).toLocaleString('es-ES'), x.estacion || '', x.marca || '', x.combustible === 'P' ? 'Diésel+' : x.combustible === 'A' ? 'Diésel' : '',
       String(x.precio).replace('.', ','), String(x.importe).replace('.', ','),
       String(x.litros).replace('.', ','), x.nivel, x.km || ''
     ]));
@@ -621,6 +705,132 @@
     ev.target.value = '';
   });
   pintarHist();
+
+
+  // ---- Comparativas ----
+  let tab = store.get('cmpTab') || 'zona';
+  function setTab(t) {
+    tab = t; store.set('cmpTab', t);
+    $('cmpZona').hidden = t !== 'zona'; $('cmpMios').hidden = t !== 'mios';
+    document.querySelectorAll('#cmpTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  }
+  $('cmpTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); });
+  const p3 = n => n.toLocaleString('es-ES', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const media = a => a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
+
+  function tabla(caption, cabeceras, filas, mejorCol) {
+    const wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
+    const t = document.createElement('table'); t.className = 'cmp';
+    const cap = document.createElement('caption'); cap.textContent = caption; t.appendChild(cap);
+    const tr = document.createElement('tr');
+    cabeceras.forEach(h => { const th = document.createElement('th'); th.textContent = h; tr.appendChild(th); });
+    const thead = document.createElement('thead'); thead.appendChild(tr); t.appendChild(thead);
+    const tb = document.createElement('tbody');
+    let mejor = null;
+    if (mejorCol != null) {
+      const vals = filas.map(f => f.raw[mejorCol]).filter(v => v != null);
+      if (vals.length > 1) mejor = Math.min(...vals);
+    }
+    filas.forEach(f => {
+      const r = document.createElement('tr');
+      f.celdas.forEach((c, i) => {
+        const td = document.createElement('td'); td.textContent = c;
+        if (mejor != null && i === mejorCol && f.raw[i] === mejor) td.className = 'best';
+        r.appendChild(td);
+      });
+      tb.appendChild(r);
+    });
+    t.appendChild(tb); wrap.appendChild(t); return wrap;
+  }
+
+  function pintarZona(todas) {
+    const box = $('cmpZona'); box.innerHTML = '';
+    let radio = 10, zona = todas.filter(c => c.km < radio);
+    if (zona.filter(c => c.e[5]).length < 8) { radio = 25; zona = todas.filter(c => c.km < radio); }
+    const ambos = zona.filter(c => c.e[5] && c.e[6]);
+    const nota = document.createElement('p'); nota.className = 'cmp-note';
+    nota.textContent = 'Gasolineras a menos de ' + radio + ' km de ti. Precios del Ministerio, ' + datos.fecha + '.';
+    box.appendChild(nota);
+    if (ambos.length) {
+      const dif = media(ambos.map(c => c.e[6] - c.e[5]));
+      const pct = media(ambos.map(c => (c.e[6] - c.e[5]) / c.e[5] * 100));
+      const big = document.createElement('p'); big.className = 'cmp-big';
+      big.innerHTML = 'El diésel+ cuesta de media <b>' + fmt(dif * 100, 1) + ' cént./L más</b> (' + fmt(pct, 1) + ' %). En un depósito de ' + fmt(cap, 0) + ' L son <b>' + fmt(dif * cap) + ' €</b> de diferencia.';
+      box.appendChild(big);
+    }
+    const grupos = new Map();
+    zona.forEach(c => { if (!grupos.has(c.marca)) grupos.set(c.marca, []); grupos.get(c.marca).push(c); });
+    const filas = [...grupos.entries()]
+      .map(([m, cs]) => {
+        const a = media(cs.filter(c => c.e[5]).map(c => c.e[5]));
+        const p = media(cs.filter(c => c.e[6]).map(c => c.e[6]));
+        const d = media(cs.filter(c => c.e[5] && c.e[6]).map(c => c.e[6] - c.e[5]));
+        return { m, n: cs.length, a, p, d };
+      })
+      .filter(f => f.a || f.p)
+      .sort((x, y) => (x.a ?? 9) - (y.a ?? 9));
+    if (!filas.length) { nota.textContent = 'No hay gasolineras cerca con precios de diésel.'; return; }
+    box.appendChild(tabla('Precio medio por marca', ['Marca', 'Nº', 'Diésel', 'Diésel+', 'Dif.'],
+      filas.map(f => ({ raw: [null, null, f.a, f.p, null], celdas: [f.m, String(f.n), f.a ? p3(f.a) : '–', f.p ? p3(f.p) : '–', f.d != null ? '+' + fmt(f.d * 100, 1) + ' c' : '–'] })), 2));
+    const n2 = document.createElement('p'); n2.className = 'cmp-note';
+    n2.textContent = 'Ordenado por precio del diésel; en rojo, la marca más barata. "Dif." es lo que se paga de más por el diésel+ en esa marca.';
+    box.appendChild(n2);
+  }
+
+  function segmentos(arr) {
+    // Consumo entre dos repostajes con km: se atribuye al combustible y la marca del primero (lo que llevaba el depósito).
+    const r = arr.filter(x => x.km > 0).sort((a, b) => a.km - b.km), out = [];
+    for (let i = 0; i + 1 < r.length; i++) {
+      const a = r[i], b = r[i + 1];
+      const usado = Math.min(a.cap, a.cap * a.nivel / 100 + a.litros) - b.cap * b.nivel / 100, km = b.km - a.km;
+      if (km > 0 && usado > 0) out.push({ x: a, usado, km });
+    }
+    return out;
+  }
+
+  function pintarMios() {
+    const box = $('cmpMios'); box.innerHTML = '';
+    const arr = leer();
+    if (arr.length < 2) {
+      const p = document.createElement('p'); p.className = 'cmp-note';
+      p.textContent = 'Aquí verás tus repostajes comparados por combustible y por marca: precio medio, consumo y coste cada 100 km. Necesitas al menos dos repostajes guardados, con los kilómetros apuntados para el consumo.';
+      box.appendChild(p); return;
+    }
+    const segs = segmentos(arr);
+    const fuelDe = x => x.combustible === 'P' ? 'Diésel+' : x.combustible === 'A' ? 'Diésel' : 'Sin indicar';
+    const marcaRep = x => x.marca || (x.estacion ? marcaDe(x.estacion.split(',')[0]) : 'Sin indicar');
+    function agrupar(clave) {
+      const g = new Map();
+      const get = k => { if (!g.has(k)) g.set(k, { n: 0, litros: 0, gasto: 0, usado: 0, km: 0 }); return g.get(k); };
+      arr.forEach(x => { const o = get(clave(x)); o.n++; o.litros += x.litros; o.gasto += x.importe; });
+      segs.forEach(s => { const o = get(clave(s.x)); o.usado += s.usado; o.km += s.km; });
+      return [...g.entries()].map(([k, o]) => {
+        const precioMedio = o.litros ? o.gasto / o.litros : null;
+        const cons = o.km ? o.usado / o.km * 100 : null;
+        return { k, n: o.n, precioMedio, cons, coste: cons && precioMedio ? cons * precioMedio : null, km: o.km };
+      }).sort((a, b) => b.n - a.n);
+    }
+    const fila = f => ({ raw: [null, null, f.precioMedio, f.cons, f.coste],
+      celdas: [f.k, String(f.n), f.precioMedio ? p3(f.precioMedio) : '–', f.cons ? fmt(f.cons, 1) : '–', f.coste ? fmt(f.coste) + ' €' : '–'] });
+    const cab = ['', 'Nº', '€/L', 'L/100', '€/100 km'];
+
+    const porFuel = agrupar(fuelDe);
+    const A = porFuel.find(f => f.k === 'Diésel'), P = porFuel.find(f => f.k === 'Diésel+');
+    if (A && P && A.cons && P.cons) {
+      const big = document.createElement('p'); big.className = 'cmp-big';
+      const dc = P.cons - A.cons, dcoste = P.coste - A.coste;
+      big.innerHTML = 'Con diésel+ gastas ' + (dc <= 0 ? '<b>' + fmt(-dc, 1) + ' L/100 menos</b>' : '<b>' + fmt(dc, 1) + ' L/100 más</b>') +
+        ', y cada 100 km te sale ' + (dcoste <= 0 ? '<b>' + fmt(-dcoste) + ' € más barato</b>' : '<b>' + fmt(dcoste) + ' € más caro</b>') + ' que con diésel normal.';
+      box.appendChild(big);
+    }
+    box.appendChild(tabla('Por combustible', ['Combustible', 'Nº', '€/L', 'L/100', '€/100 km'], porFuel.map(fila), 4));
+    box.appendChild(tabla('Por marca', ['Marca', 'Nº', '€/L', 'L/100', '€/100 km'], agrupar(marcaRep).map(fila), 4));
+    const n = document.createElement('p'); n.className = 'cmp-note';
+    n.textContent = 'El consumo de cada tramo se asigna al combustible y la marca del repostaje con el que empezó. Si mezclas en el mismo depósito, el dato es aproximado; con pocos tramos, tómalo como orientativo. En rojo, lo más barato por kilómetro.';
+    box.appendChild(n);
+  }
+  setTab(tab);
+  pintarMios();
 
   // ---- Copia automática en GitHub (repositorio privado) ----
   const FICHERO = 'repostajes.json';
