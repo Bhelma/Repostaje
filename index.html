@@ -155,7 +155,7 @@
   .h-del { grid-row: span 2; font: inherit; font-size: 1.1rem; background: none; border: 0; color: var(--muted); padding: 6px 8px; cursor: pointer; }
   .brand-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
   .brand-row span { color: var(--muted); font-size: .95rem; flex: none; }
-  .brand-row select, .save select { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .brand-row input, .brand-row select, .save select { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
   .st .alt { color: var(--muted); font-size: .85rem; text-align: right; font-variant-numeric: tabular-nums; }
   .save-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
   .save .field input.txt { font-size: 1.15rem; font-weight: 600; }
@@ -301,7 +301,8 @@
       </div>
     </div>
     <button type="button" class="near-btn" id="nearBtn">Buscar cerca de mí</button>
-    <label class="brand-row" id="brandRow" hidden><span>Marca</span><select id="brandSel"><option value="">Todas las marcas</option></select></label>
+    <label class="brand-row" id="brandRow" hidden><span>Marca</span><input id="brandInput" type="search" list="brandOptions" placeholder="Todas (escribe para buscar)" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <datalist id="brandOptions"></datalist>
     <p class="near-meta" id="nearMeta"></p>
     <ul class="st-list" id="stList"></ul>
   </section>
@@ -510,7 +511,11 @@
   }
   setSaveFuel(fuel);
   $('saveFuel').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSaveFuel(Number(b.dataset.f)); });
-  $('brandSel').addEventListener('change', () => { marcaFiltro = $('brandSel').value; store.set('marcaFiltro', marcaFiltro); pintar(); });
+  let filtroTimer = null;
+  $('brandInput').addEventListener('input', () => {
+    clearTimeout(filtroTimer);
+    filtroTimer = setTimeout(() => { marcaFiltro = $('brandInput').value.trim(); store.set('marcaFiltro', marcaFiltro); if (datos && pos) pintar(); }, 300);
+  });
 
   const dist = (a, b, c, d) => {
     const R = 6371, r = Math.PI / 180;
@@ -519,19 +524,26 @@
   };
   const cap1 = t => t.toLowerCase().replace(/(^|\s|\/)\S/g, m => m.toUpperCase());
 
+  const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  let marcasHechas = null;
   function pintarMarcas(todas) {
+    if (marcasHechas === datos) return;
+    marcasHechas = datos;
     const cuenta = new Map();
-    todas.filter(c => c.km < 25).forEach(c => cuenta.set(c.marca, (cuenta.get(c.marca) || 0) + 1));
-    const lista = [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    const sel = $('brandSel'); sel.innerHTML = '';
-    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Todas las marcas'; sel.appendChild(o0);
-    lista.forEach(([m, n]) => { const o = document.createElement('option'); o.value = m; o.textContent = m + ' (' + n + ')'; sel.appendChild(o); });
-    if (marcaFiltro && !cuenta.has(marcaFiltro)) { marcaFiltro = ''; store.set('marcaFiltro', ''); }
-    sel.value = marcaFiltro;
+    todas.forEach(c => cuenta.set(c.marca, (cuenta.get(c.marca) || 0) + 1));
+    const lista = [...cuenta.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 250);
+    const dl = $('brandOptions'); dl.innerHTML = '';
+    lista.forEach(([m, n]) => { const o = document.createElement('option'); o.value = m; o.label = n + ' gasolineras'; dl.appendChild(o); });
+    const dl2 = $('marcasList'); dl2.innerHTML = '';
+    lista.slice(0, 60).forEach(([m]) => { const o = document.createElement('option'); o.value = m; dl2.appendChild(o); });
+    $('brandInput').value = marcaFiltro;
     $('brandRow').hidden = false;
-    const dl = $('marcasList'); dl.innerHTML = '';
-    lista.slice(0, 40).forEach(([m]) => { const o = document.createElement('option'); o.value = m; dl.appendChild(o); });
   }
+  const coincide = c => {
+    if (!marcaFiltro) return true;
+    const q = norm(marcaFiltro);
+    return norm(c.marca).includes(q) || norm(c.e[0]).includes(q);
+  };
 
   function pintar() {
     const todas = datos.estaciones
@@ -539,13 +551,20 @@
       .sort((a, b) => a.km - b.km);
     pintarMarcas(todas);
     pintarZona(todas);
-    const cerca = todas
-      .filter(c => c.e[fuel] && (!marcaFiltro || c.marca === marcaFiltro))
-      .slice(0, 15);
+    const deMarca = todas.filter(c => coincide(c));
+    const cerca = deMarca.filter(c => c.e[fuel]).slice(0, 15);
     const ul = $('stList'); ul.innerHTML = '';
-    if (!cerca.length) { $('nearMeta').textContent = 'No hay gasolineras de esa marca con ese combustible cerca.'; return; }
+    if (!cerca.length) {
+      $('nearMeta').textContent = marcaFiltro
+        ? (deMarca.length ? 'Hay gasolineras de "' + marcaFiltro + '", pero ninguna vende ese combustible. Prueba con el otro.' : 'No hay ninguna gasolinera "' + marcaFiltro + '" en los datos de hoy. Puede que haya cambiado de nombre o cerrado.')
+        : 'No hay gasolineras con ese combustible en los datos.';
+      return;
+    }
     const min = Math.min(...cerca.map(c => c.e[fuel]));
-    $('nearMeta').textContent = 'Las ' + cerca.length + ' más cercanas' + (marcaFiltro ? ' de ' + marcaFiltro : '') + '. Precios del Ministerio, ' + datos.fecha + '. Toca una para usar su precio.';
+    const lejos = cerca[0].km >= 30;
+    $('nearMeta').textContent = (marcaFiltro
+      ? 'Las ' + cerca.length + ' más cercanas que coinciden con "' + marcaFiltro + '" (hay ' + deMarca.length + ' en total)' + (lejos ? '; la más cercana está a ' + fmt(cerca[0].km, 0) + ' km' : '')
+      : 'Las ' + cerca.length + ' más cercanas') + '. Datos del Ministerio del ' + datos.fecha + '. Toca una para usar su precio.';
     cerca.forEach(({ e, km }) => {
       const li = document.createElement('li');
       const b = document.createElement('button'); b.type = 'button'; b.className = 'st';
@@ -553,7 +572,7 @@
       const pr = document.createElement('span'); pr.className = 'price' + (e[fuel] === min ? ' best' : '');
       pr.textContent = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €';
       const a = document.createElement('span'); a.className = 'addr';
-      a.textContent = (km < 1 ? Math.round(km * 1000) + ' m' : fmt(km, 1) + ' km') + ', ' + cap1(e[1]) + ', ' + cap1(e[2]);
+      a.textContent = (km < 1 ? Math.round(km * 1000) + ' m' : km < 100 ? fmt(km, 1) + ' km' : fmt(km, 0) + ' km') + ', ' + cap1(e[1]) + ', ' + cap1(e[2]);
       const otro = fuel === 5 ? 6 : 5;
       const alt = document.createElement('span'); alt.className = 'alt';
       alt.textContent = e[otro] ? (otro === 6 ? 'Diésel+ ' : 'Diésel ') + e[otro].toLocaleString('es-ES', { minimumFractionDigits: 3 }) : '';
