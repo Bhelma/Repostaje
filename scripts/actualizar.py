@@ -1,15 +1,17 @@
 """Descarga los precios de carburantes del Ministerio y guarda un JSON ligero.
 
-Descarga las provincias que quedan a unos 150 km de Valencia. Para cambiar la zona, edita PROVINCIAS
-con los códigos INE (46 Valencia, 12 Castellón, 03 Alicante...). Lista vacía = toda España (mucho más lento).
+Descarga toda España pidiendo las 52 provincias por separado y varias a la vez (pedirla entera de golpe
+es muy lento en el servidor del Ministerio). Para limitar la zona, pon códigos INE en PROVINCIAS
+(46 Valencia, 12 Castellón, 03 Alicante...). Lista vacía = toda España.
 """
 import json
 import os
 import sys
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
-PROVINCIAS = ["46", "12", "03", "16", "02", "44", "30"]  # Valencia, Castellón, Alicante, Cuenca, Albacete, Teruel, Murcia
+PROVINCIAS = []  # vacío = toda España
 BASE = ("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/"
         "PreciosCarburantes/EstacionesTerrestres/")
 SALIDA = os.path.join(os.path.dirname(__file__), "..", "data", "precios.json")
@@ -45,23 +47,17 @@ def descargar(prov, timeout=60, intentos=3, obligatorio=True):
 
 
 def descargar_todo():
-    """Intenta toda España de una vez; si el servidor tarda demasiado, va provincia a provincia."""
-    if PROVINCIAS:
-        partes = [d for d in (descargar(p, timeout=90, obligatorio=False) for p in PROVINCIAS) if d]
-        if not partes:
-            raise SystemExit("No se ha podido descargar ninguna provincia")
-        return partes
-    datos = descargar("", timeout=240, intentos=2, obligatorio=False)
-    if datos and datos.get("ListaEESSPrecio"):
-        return [datos]
-    print("Descarga completa fallida; probando provincia a provincia", file=sys.stderr)
-    partes = []
-    for p in TODAS_LAS_PROVINCIAS:
-        d = descargar(p, timeout=90, intentos=3, obligatorio=False)
-        if d:
-            partes.append(d)
-    if len(partes) < 40:
-        raise SystemExit(f"Solo se han podido descargar {len(partes)} provincias de 52")
+    """Pide cada provincia por separado, 6 a la vez."""
+    lista = PROVINCIAS or TODAS_LAS_PROVINCIAS
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        resultados = list(pool.map(lambda p: (p, descargar(p, timeout=90, intentos=3, obligatorio=False)), lista))
+    partes = [d for _, d in resultados if d and d.get("ListaEESSPrecio")]
+    fallidas = [p for p, d in resultados if not (d and d.get("ListaEESSPrecio"))]
+    if fallidas:
+        print("Provincias sin datos: " + ", ".join(fallidas), file=sys.stderr)
+    minimo = max(1, int(len(lista) * 0.75))
+    if len(partes) < minimo:
+        raise SystemExit(f"Solo se han podido descargar {len(partes)} provincias de {len(lista)}")
     return partes
 
 
