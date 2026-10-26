@@ -1,6 +1,7 @@
 """Descarga los precios de carburantes del Ministerio y guarda un JSON ligero.
 
-Provincias: cambia la lista PROVINCIAS (códigos INE: 46 Valencia, 12 Castellón, 03 Alicante...).
+Por defecto descarga TODA España (unas 11.500 gasolineras), para poder buscar marcas lejos de casa.
+Si prefieres solo algunas provincias, pon sus códigos INE en PROVINCIAS (46 Valencia, 12 Castellón, 03 Alicante...).
 """
 import json
 import os
@@ -8,9 +9,9 @@ import sys
 import time
 import urllib.request
 
-PROVINCIAS = ["46"]
+PROVINCIAS = []  # vacío = toda España
 BASE = ("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/"
-        "PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/")
+        "PreciosCarburantes/EstacionesTerrestres/")
 SALIDA = os.path.join(os.path.dirname(__file__), "..", "data", "precios.json")
 
 
@@ -23,7 +24,8 @@ def num(s):
 
 
 def descargar(prov):
-    req = urllib.request.Request(BASE + prov, headers={
+    url = BASE + ("FiltroProvincia/" + prov if prov else "")
+    req = urllib.request.Request(url, headers={
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (repostaje-giulia)",
     })
@@ -32,14 +34,14 @@ def descargar(prov):
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.loads(r.read().decode("utf-8"))
         except Exception as e:  # noqa: BLE001
-            print(f"Provincia {prov}, intento {intento + 1}: {e}", file=sys.stderr)
+            print(f"Provincia {prov or 'todas'}, intento {intento + 1}: {e}", file=sys.stderr)
             time.sleep(10)
     raise SystemExit(f"No se pudo descargar la provincia {prov}")
 
 
 def main():
     estaciones, fecha = [], ""
-    for prov in PROVINCIAS:
+    for prov in (PROVINCIAS or [""]):
         datos = descargar(prov)
         fecha = datos.get("Fecha", fecha)
         for e in datos.get("ListaEESSPrecio", []):
