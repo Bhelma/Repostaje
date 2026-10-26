@@ -134,6 +134,23 @@
   .st .price.best { color: var(--red); }
   .st .addr { color: var(--muted); font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .st.sel { background: var(--red-soft); border-radius: 10px; }
+  .st-list li { display: flex; align-items: center; gap: 8px; }
+  .st-list li > .st { flex: 1; min-width: 0; }
+  .go { flex: none; font-weight: 700; font-size: 1rem; text-decoration: none; color: var(--red); border: 2px solid var(--red); border-radius: 10px; padding: 8px 14px; }
+  .go:active { background: var(--red); color: #fff; }
+  .save { margin-top: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .save .field input { font-size: 1.6rem; }
+  .near-btn.ghost { background: none; color: var(--red); border: 2px solid var(--red); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .stats .res { background: var(--bg); }
+  .stats .res strong { font-size: 1.35rem; }
+  .h-item { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 10px; align-items: center; width: 100%; padding: 10px 4px; }
+  .h-item .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h-item .addr { color: var(--muted); font-size: .92rem; grid-column: 1; }
+  .h-item .price { font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; grid-row: span 2; }
+  .h-del { grid-row: span 2; font: inherit; font-size: 1.1rem; background: none; border: 0; color: var(--muted); padding: 6px 8px; cursor: pointer; }
+  .hist-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .hist-actions button, .hist-actions label { font: inherit; font-weight: 600; font-size: .95rem; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
   [hidden] { display: none !important; }
 
   /* Results */
@@ -220,6 +237,15 @@
     <div class="res full"><span>Nivel después</span><strong id="despues">–</strong></div>
   </div>
 
+  <div class="save">
+    <label class="field">
+      <span>Cuentakilómetros (opcional, para calcular el consumo)</span>
+      <div class="row"><input id="km" type="text" inputmode="numeric" placeholder="45230" autocomplete="off"><em>km</em></div>
+    </label>
+    <button type="button" class="near-btn" id="saveBtn">Guardar repostaje</button>
+    <p class="near-meta" id="saveMsg"></p>
+  </div>
+
   <section class="near">
     <div class="near-head">
       <h2>Gasolineras cercanas</h2>
@@ -231,6 +257,23 @@
     <button type="button" class="near-btn" id="nearBtn">Buscar cerca de mí</button>
     <p class="near-meta" id="nearMeta"></p>
     <ul class="st-list" id="stList"></ul>
+  </section>
+
+  <section class="near" id="hist">
+    <div class="near-head"><h2>Mis repostajes</h2></div>
+    <div class="stats">
+      <div class="res"><span>Este mes</span><strong id="hMes">–</strong></div>
+      <div class="res"><span>Litros este mes</span><strong id="hMesL">–</strong></div>
+      <div class="res"><span>Total gastado</span><strong id="hTotal">–</strong></div>
+      <div class="res"><span>Consumo medio</span><strong id="hCons">–</strong></div>
+    </div>
+    <p class="near-meta" id="hEmpty"></p>
+    <ul class="st-list" id="hList"></ul>
+    <div class="hist-actions">
+      <button type="button" id="hCsv">Exportar a Excel (CSV)</button>
+      <button type="button" id="hBackup">Copia de seguridad</button>
+      <label>Restaurar copia<input type="file" id="hRestore" accept="application/json,.json" hidden></label>
+    </div>
   </section>
 </main>
 
@@ -365,7 +408,8 @@
 
   // ---- Gasolineras cercanas ----
   let fuel = Number(store.get('fuel')) || 5;
-  let datos = null, pos = null;
+  let datos = null, pos = null, estacionSel = '';
+  precio.addEventListener('input', () => { estacionSel = ''; });
   const setFuel = f => {
     fuel = f; store.set('fuel', String(f));
     document.querySelectorAll('#fuelToggle button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f));
@@ -405,12 +449,17 @@
       b.addEventListener('click', () => {
         precio.value = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 });
         store.set('precio', precio.value);
+        estacionSel = cap1(e[0] || 'Sin nombre') + ', ' + cap1(e[2]);
         document.querySelectorAll('.st').forEach(x => x.classList.remove('sel'));
         b.classList.add('sel');
         render();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
-      li.appendChild(b); ul.appendChild(li);
+      const go = document.createElement('a'); go.className = 'go'; go.textContent = 'Ir';
+      go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + e[3] + ',' + e[4] + '&travelmode=driving';
+      go.target = '_blank'; go.rel = 'noopener';
+      go.setAttribute('aria-label', 'Cómo llegar a ' + cap1(e[0]));
+      li.append(b, go); ul.appendChild(li);
     });
   }
 
@@ -435,6 +484,101 @@
       meta.textContent = 'No tengo permiso para la ubicación. Actívalo para esta web en los ajustes del navegador.';
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   });
+
+  // ---- Historial de repostajes ----
+  const KEY = 'repostajes';
+  const leer = () => { try { return JSON.parse(store.get(KEY)) || []; } catch (e) { return []; } };
+  const guardar = arr => store.set(KEY, JSON.stringify(arr));
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  const eur = n => fmt(n) + ' €';
+
+  function consumo(arr) {
+    const r = arr.filter(x => x.km > 0).sort((a, b) => a.km - b.km);
+    let usado = 0, km = 0;
+    for (let i = 0; i + 1 < r.length; i++) {
+      const a = r[i], b = r[i + 1];
+      const despues = Math.min(a.cap, a.cap * a.nivel / 100 + a.litros);
+      const u = despues - b.cap * b.nivel / 100, d = b.km - a.km;
+      if (d > 0 && u > 0) { usado += u; km += d; }
+    }
+    return km > 0 ? usado / km * 100 : null;
+  }
+
+  function pintarHist() {
+    const arr = leer().sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const now = new Date(), mes = now.toISOString().slice(0, 7);
+    const delMes = arr.filter(x => x.fecha.slice(0, 7) === mes);
+    $('hMes').textContent = eur(delMes.reduce((t, x) => t + x.importe, 0));
+    $('hMesL').textContent = fmt(delMes.reduce((t, x) => t + x.litros, 0), 1) + ' L';
+    $('hTotal').textContent = eur(arr.reduce((t, x) => t + x.importe, 0));
+    const c = consumo(arr);
+    $('hCons').textContent = c ? fmt(c, 1) + ' L/100' : '–';
+    $('hEmpty').textContent = arr.length ? '' : 'Aún no has guardado ningún repostaje. Para el consumo medio, apunta los kilómetros en al menos dos.';
+    const ul = $('hList'); ul.innerHTML = '';
+    arr.forEach(x => {
+      const li = document.createElement('li');
+      const d = document.createElement('div'); d.className = 'h-item';
+      const n = document.createElement('span'); n.className = 'name';
+      n.textContent = new Date(x.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) + (x.estacion ? ', ' + x.estacion : '');
+      const pr = document.createElement('span'); pr.className = 'price'; pr.textContent = eur(x.importe);
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'h-del'; del.textContent = '✕';
+      del.setAttribute('aria-label', 'Borrar este repostaje');
+      del.addEventListener('click', () => {
+        if (!confirm('¿Borrar este repostaje?')) return;
+        guardar(leer().filter(y => y.id !== x.id)); pintarHist();
+      });
+      const a = document.createElement('span'); a.className = 'addr';
+      a.textContent = fmt(x.litros) + ' L a ' + x.precio.toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €/L' + (x.km ? ', ' + x.km.toLocaleString('es-ES') + ' km' : '');
+      d.append(n, pr, del, a); li.appendChild(d); ul.appendChild(li);
+    });
+  }
+
+  $('saveBtn').addEventListener('click', () => {
+    const p = parse(precio.value), m = parse(importe.value), k = parseInt($('km').value.replace(/\D/g, ''), 10);
+    const msg = $('saveMsg');
+    if (!(p > 0 && m > 0)) { msg.textContent = 'Pon el precio y el importe antes de guardar.'; return; }
+    const arr = leer();
+    arr.push({
+      id: Date.now().toString(36), fecha: new Date().toISOString(), estacion: estacionSel,
+      precio: p, importe: m, litros: Math.round(m / p * 100) / 100,
+      nivel: Number(nivel.value), cap, km: k > 0 ? Math.round(k) : null
+    });
+    guardar(arr);
+    msg.textContent = 'Guardado: ' + fmt(m / p) + ' L por ' + eur(m) + '.';
+    importe.value = ''; $('km').value = ''; render(); pintarHist();
+  });
+
+  function descargar(nombre, texto, tipo) {
+    const url = URL.createObjectURL(new Blob([texto], { type: tipo }));
+    const a = document.createElement('a'); a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const hoy = () => new Date().toISOString().slice(0, 10);
+  $('hCsv').addEventListener('click', () => {
+    const filas = [['Fecha', 'Gasolinera', 'Precio €/L', 'Importe €', 'Litros', 'Nivel antes %', 'Km']];
+    leer().sort((a, b) => a.fecha.localeCompare(b.fecha)).forEach(x => filas.push([
+      new Date(x.fecha).toLocaleString('es-ES'), x.estacion || '',
+      String(x.precio).replace('.', ','), String(x.importe).replace('.', ','),
+      String(x.litros).replace('.', ','), x.nivel, x.km || ''
+    ]));
+    const csv = '\ufeff' + filas.map(f => f.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+    descargar('repostajes-' + hoy() + '.csv', csv, 'text/csv');
+  });
+  $('hBackup').addEventListener('click', () => descargar('repostajes-copia-' + hoy() + '.json', JSON.stringify(leer(), null, 1), 'application/json'));
+  $('hRestore').addEventListener('change', async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try {
+      const nuevos = JSON.parse(await f.text());
+      if (!Array.isArray(nuevos)) throw 0;
+      const ids = new Set(leer().map(x => x.id));
+      const unidos = leer().concat(nuevos.filter(x => x && x.id && !ids.has(x.id)));
+      guardar(unidos); pintarHist();
+      $('hEmpty').textContent = 'Copia restaurada: ' + unidos.length + ' repostajes en total.';
+    } catch (e) { $('hEmpty').textContent = 'Ese fichero no es una copia de seguridad de esta app.'; }
+    ev.target.value = '';
+  });
+  pintarHist();
 
   render();
 })();
