@@ -149,6 +149,18 @@
   .h-item .addr { color: var(--muted); font-size: .92rem; grid-column: 1; }
   .h-item .price { font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; grid-row: span 2; }
   .h-del { grid-row: span 2; font: inherit; font-size: 1.1rem; background: none; border: 0; color: var(--muted); padding: 6px 8px; cursor: pointer; }
+  .sync { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .sync-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .sync-head h3 { margin: 0; font-size: 1.1rem; }
+  .sync-state { margin: 6px 0 0; font-size: .95rem; color: var(--muted); }
+  .sync-state.ok { color: var(--ink); }
+  .sync-state.err { color: var(--warn); font-weight: 600; }
+  .sync-form { display: grid; gap: 10px; margin-top: 10px; }
+  .sync-form label span { display: block; color: var(--muted); font-size: .92rem; margin-bottom: 2px; }
+  .sync-form input { width: 100%; font: inherit; font-size: 1.05rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .sync-form .row2 { display: flex; gap: 8px; }
+  .sync-form .row2 button { flex: 1; }
+  .link-btn { font: inherit; font-weight: 600; font-size: .95rem; background: none; border: 0; color: var(--red); cursor: pointer; padding: 4px 0; }
   .hist-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .hist-actions button, .hist-actions label { font: inherit; font-weight: 600; font-size: .95rem; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
   [hidden] { display: none !important; }
@@ -273,6 +285,22 @@
       <button type="button" id="hCsv">Exportar a Excel (CSV)</button>
       <button type="button" id="hBackup">Copia de seguridad</button>
       <label>Restaurar copia<input type="file" id="hRestore" accept="application/json,.json" hidden></label>
+    </div>
+
+    <div class="sync">
+      <div class="sync-head">
+        <h3>Copia en GitHub</h3>
+        <button type="button" class="link-btn" id="syncCfg">Configurar</button>
+      </div>
+      <p class="sync-state" id="syncState">Sin configurar. Tus repostajes solo están en este móvil.</p>
+      <div class="sync-form" id="syncForm" hidden>
+        <label><span>Repositorio privado (usuario/nombre)</span><input id="ghRepo" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="tuusuario/repostaje-datos"></label>
+        <label><span>Clave de acceso (token)</span><input id="ghToken" type="password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…"></label>
+        <div class="row2">
+          <button type="button" class="near-btn" id="ghConnect">Conectar</button>
+          <button type="button" class="near-btn ghost" id="ghDisconnect">Desconectar</button>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -487,8 +515,18 @@
 
   // ---- Historial de repostajes ----
   const KEY = 'repostajes';
+  const KEY_DEL = 'repostajesBorrados';
   const leer = () => { try { return JSON.parse(store.get(KEY)) || []; } catch (e) { return []; } };
-  const guardar = arr => store.set(KEY, JSON.stringify(arr));
+  const leerBorrados = () => { try { return JSON.parse(store.get(KEY_DEL)) || []; } catch (e) { return []; } };
+  function guardar(arr, sinSubir) {
+    store.set(KEY, JSON.stringify(arr));
+    if (!sinSubir) { store.set('ghPendiente', '1'); programarSync(); }
+  }
+  function borrar(id) {
+    const b = leerBorrados(); if (!b.includes(id)) b.push(id);
+    store.set(KEY_DEL, JSON.stringify(b));
+    guardar(leer().filter(y => y.id !== id));
+  }
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   const eur = n => fmt(n) + ' €';
 
@@ -525,7 +563,7 @@
       del.setAttribute('aria-label', 'Borrar este repostaje');
       del.addEventListener('click', () => {
         if (!confirm('¿Borrar este repostaje?')) return;
-        guardar(leer().filter(y => y.id !== x.id)); pintarHist();
+        borrar(x.id); pintarHist();
       });
       const a = document.createElement('span'); a.className = 'addr';
       a.textContent = fmt(x.litros) + ' L a ' + x.precio.toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €/L' + (x.km ? ', ' + x.km.toLocaleString('es-ES') + ' km' : '');
@@ -579,6 +617,119 @@
     ev.target.value = '';
   });
   pintarHist();
+
+  // ---- Copia automática en GitHub (repositorio privado) ----
+  const FICHERO = 'repostajes.json';
+  let syncTimer = null, sincronizando = false;
+  const cfg = () => { try { return JSON.parse(store.get('gh')) || null; } catch (e) { return null; } };
+
+  function estado(txt, tipo) {
+    const el = $('syncState'); el.textContent = txt; el.className = 'sync-state' + (tipo ? ' ' + tipo : '');
+  }
+  function aBase64(texto) {
+    const bytes = new TextEncoder().encode(texto); let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+  function deBase64(b64) {
+    const bin = atob(b64.replace(/\s/g, ''));
+    return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  }
+  async function gh(c, ruta, opciones = {}) {
+    const r = await fetch('https://api.github.com/repos/' + c.repo + ruta, {
+      ...opciones,
+      cache: 'no-store',
+      headers: { 'Authorization': 'Bearer ' + c.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opciones.headers || {}) }
+    });
+    return r;
+  }
+  function errorTexto(status) {
+    if (status === 401) return 'La clave no es válida o ha caducado. Genera una nueva y vuelve a conectar.';
+    if (status === 403) return 'La clave no tiene permiso de escritura en el repositorio (Contents: Read and write).';
+    if (status === 404) return 'No encuentro el repositorio, o la clave no tiene acceso a él. Revisa el nombre usuario/repositorio.';
+    return 'GitHub ha respondido con un error (' + status + '). Se reintentará más tarde.';
+  }
+
+  function programarSync() {
+    if (!cfg()) return;
+    clearTimeout(syncTimer); syncTimer = setTimeout(sincronizar, 800);
+  }
+
+  async function sincronizar(intento = 0) {
+    const c = cfg(); if (!c || sincronizando) return;
+    if (!navigator.onLine) { estado('Sin conexión. Los cambios se subirán cuando vuelva.', ''); return; }
+    sincronizando = true; estado('Sincronizando…', '');
+    try {
+      let remoto = { repostajes: [], borrados: [] }, sha;
+      const r = await gh(c, '/contents/' + FICHERO);
+      if (r.ok) {
+        const j = await r.json(); sha = j.sha;
+        try { remoto = JSON.parse(deBase64(j.content)); } catch (e) {}
+      } else if (r.status !== 404) { throw { status: r.status }; }
+
+      const borrados = new Set([...(remoto.borrados || []), ...leerBorrados()]);
+      const porId = new Map();
+      [...(remoto.repostajes || []), ...leer()].forEach(x => { if (x && x.id && !borrados.has(x.id)) porId.set(x.id, x); });
+      const unidos = [...porId.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
+      const listaBorrados = [...borrados];
+
+      store.set(KEY_DEL, JSON.stringify(listaBorrados));
+      guardar(unidos, true);
+      pintarHist();
+
+      const nuevo = JSON.stringify({ app: 'repostaje-giulia', version: 1, repostajes: unidos, borrados: listaBorrados }, null, 1);
+      const viejo = JSON.stringify({ app: 'repostaje-giulia', version: 1, repostajes: (remoto.repostajes || []).slice().sort((a, b) => a.fecha.localeCompare(b.fecha)), borrados: remoto.borrados || [] }, null, 1);
+      if (nuevo !== viejo || !sha) {
+        const put = await gh(c, '/contents/' + FICHERO, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Repostajes: ' + unidos.length, content: aBase64(nuevo), ...(sha ? { sha } : {}) })
+        });
+        if (put.status === 409 || put.status === 422) {
+          sincronizando = false;
+          if (intento < 2) return sincronizar(intento + 1);
+          throw { status: put.status };
+        }
+        if (!put.ok) throw { status: put.status };
+      }
+      store.set('ghPendiente', '');
+      store.set('ghUltima', new Date().toISOString());
+      estado('Copia al día: ' + unidos.length + ' repostajes en ' + c.repo + ', ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok');
+    } catch (e) {
+      estado(e && e.status ? errorTexto(e.status) : 'No he podido conectar con GitHub. Se reintentará más tarde.', 'err');
+    } finally {
+      sincronizando = false;
+    }
+  }
+
+  $('syncCfg').addEventListener('click', () => {
+    const f = $('syncForm'); f.hidden = !f.hidden;
+    const c = cfg(); $('ghRepo').value = c ? c.repo : ''; $('ghToken').value = c ? c.token : '';
+  });
+  $('ghConnect').addEventListener('click', async () => {
+    const repo = $('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+    const token = $('ghToken').value.trim();
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !token) { estado('Escribe el repositorio como usuario/nombre y pega la clave.', 'err'); return; }
+    estado('Comprobando…', '');
+    try {
+      const r = await gh({ repo, token }, '');
+      if (!r.ok) { estado(errorTexto(r.status), 'err'); return; }
+      const info = await r.json();
+      if (!info.private && !confirm('Ese repositorio es público y cualquiera podría ver tus repostajes. ¿Usarlo igualmente?')) { estado('Conexión cancelada.', ''); return; }
+    } catch (e) { estado('No he podido conectar con GitHub. Revisa la conexión.', 'err'); return; }
+    store.set('gh', JSON.stringify({ repo, token }));
+    $('syncForm').hidden = true;
+    sincronizar();
+  });
+  $('ghDisconnect').addEventListener('click', () => {
+    if (!confirm('¿Desconectar? Los repostajes se quedan en el móvil y en GitHub, pero dejarán de sincronizarse.')) return;
+    store.set('gh', ''); $('ghToken').value = ''; $('syncForm').hidden = true;
+    estado('Sin configurar. Tus repostajes solo están en este móvil.', '');
+  });
+
+  window.addEventListener('online', () => sincronizar());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizar(); });
+  if (cfg()) sincronizar();
 
   render();
 })();
