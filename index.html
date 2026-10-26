@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E9ECEF">
+<title>Repostaje Giulia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E9ECEF;
+    --panel: #FFFFFF;
+    --ink: #1C2228;
+    --muted: #5E6973;
+    --line: #CDD3D9;
+    --red: #B3121C;
+    --red-soft: rgba(179,18,28,.14);
+    --fuel-old: #8C969F;
+    --warn: #8A5A00;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15191D;
+      --panel: #1F252B;
+      --ink: #EEF1F3;
+      --muted: #9AA5AF;
+      --line: #343C44;
+      --red: #E2323C;
+      --red-soft: rgba(226,50,60,.18);
+      --fuel-old: #5B656E;
+      --warn: #E6B450;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15191D; --panel: #1F252B; --ink: #EEF1F3; --muted: #9AA5AF; --line: #343C44;
+    --red: #E2323C; --red-soft: rgba(226,50,60,.18); --fuel-old: #5B656E; --warn: #E6B450;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+    font-size: 17px; line-height: 1.4;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main { max-width: 460px; margin: 0 auto; padding: 18px 16px 32px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin: 0; letter-spacing: .01em; }
+  .cap-btn {
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    font: inherit; font-size: .95rem; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  }
+
+  /* Gauge */
+  .gauge { background: var(--panel); border-radius: 18px; padding: 18px 16px 14px; }
+  .big { display: flex; align-items: baseline; gap: 8px; }
+  .big .num { font-size: 4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .big .unit { font-size: 1.4rem; font-weight: 600; color: var(--muted); }
+  .sub { color: var(--muted); margin: 4px 0 16px; font-size: 1.05rem; }
+  .sub b { color: var(--red); font-weight: 700; }
+
+  .tank { position: relative; height: 34px; border-radius: 8px; background: var(--bg); overflow: hidden; border: 1px solid var(--line); }
+  .seg { position: absolute; top: 0; bottom: 0; transition: left .25s ease, width .25s ease; }
+  .seg.old { left: 0; background: var(--fuel-old); }
+  .seg.new { background: var(--red); }
+  .seg.over { background: repeating-linear-gradient(45deg, var(--red) 0 6px, transparent 6px 12px); opacity: .55; }
+  .ticks { position: absolute; inset: 0; pointer-events: none; }
+  .ticks i { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--panel); opacity: .7; }
+  .scale { display: flex; justify-content: space-between; color: var(--muted); font-size: .9rem; margin-top: 4px; font-weight: 600; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: .92rem; color: var(--muted); flex-wrap: wrap; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+  .legend .l-old::before { background: var(--fuel-old); }
+  .legend .l-new::before { background: var(--red); }
+  .warn { color: var(--warn); font-weight: 600; margin-top: 10px; font-size: .98rem; }
+  .warn:empty { display: none; }
+
+  /* Inputs */
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  label.field { background: var(--panel); border-radius: 14px; padding: 10px 12px 8px; display: block; border: 2px solid transparent; }
+  label.field:focus-within { border-color: var(--red); }
+  .field span { display: block; color: var(--muted); font-size: .95rem; font-weight: 500; }
+  .field .row { display: flex; align-items: baseline; gap: 4px; }
+  .field input {
+    width: 100%; min-width: 0; border: 0; background: none; color: var(--ink);
+    font: inherit; font-size: 2rem; font-weight: 700; padding: 2px 0; outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .field em { font-style: normal; color: var(--muted); font-weight: 600; font-size: 1.1rem; }
+
+  .level { background: var(--panel); border-radius: 14px; padding: 12px 12px 14px; margin-top: 12px; }
+  .level-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .level-head span { color: var(--muted); font-size: .95rem; font-weight: 500; }
+  .level-head output { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .quick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+  .quick button {
+    font: inherit; font-weight: 600; font-size: 1rem; padding: 9px 0; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+  }
+  .quick button.on { background: var(--red); border-color: var(--red); color: #fff; }
+  input[type=range] { width: 100%; margin: 12px 0 0; accent-color: var(--red); height: 28px; }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--bg); }
+  .toggle button { font: inherit; font-weight: 600; font-size: .95rem; border: 0; background: none; color: var(--muted); padding: 4px 14px; border-radius: 999px; cursor: pointer; }
+  .toggle button.on { background: var(--red); color: #fff; }
+  .pct-row { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
+  .pct-row input { width: 5ch; border: 0; border-bottom: 2px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: 2.4rem; font-weight: 700; padding: 0; outline: none; font-variant-numeric: tabular-nums; }
+  .pct-row input:focus { border-bottom-color: var(--red); }
+  .pct-row em { font-style: normal; color: var(--muted); font-weight: 600; font-size: 1.1rem; }
+  .level-note { margin: 10px 0 0; color: var(--muted); font-size: .98rem; }
+  .level-note b { color: var(--ink); }
+  .sub2 { color: var(--muted); margin: -10px 0 16px; font-size: 1rem; }
+  .sub2:empty { display: none; }
+  /* Gasolineras */
+  .near { background: var(--panel); border-radius: 18px; padding: 14px 12px; margin-top: 16px; }
+  .near-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .near-head h2 { margin: 0; font-size: 1.25rem; }
+  .near-btn { font: inherit; font-weight: 700; font-size: 1.05rem; width: 100%; margin-top: 12px; padding: 12px; border-radius: 12px; border: 0; background: var(--red); color: #fff; cursor: pointer; }
+  .near-meta { color: var(--muted); font-size: .92rem; margin: 10px 0 0; }
+  .near-meta:empty { display: none; }
+  .st-list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .st-list li + li { border-top: 1px solid var(--line); }
+  .st { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: none; border: 0; padding: 10px 4px; cursor: pointer; }
+  .st:active { background: var(--red-soft); }
+  .st .name { font-weight: 700; font-size: 1.08rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st .price { font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; grid-row: span 2; align-self: center; }
+  .st .price.best { color: var(--red); }
+  .st .addr { color: var(--muted); font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st.sel { background: var(--red-soft); border-radius: 10px; }
+  [hidden] { display: none !important; }
+
+  /* Results */
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .res { background: var(--panel); border-radius: 14px; padding: 10px 12px; }
+  .res span { display: block; color: var(--muted); font-size: .95rem; }
+  .res strong { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .res.full { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; }
+
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  dialog { border: 0; border-radius: 16px; background: var(--panel); color: var(--ink); padding: 18px; width: min(90vw, 340px); }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  dialog h2 { margin: 0 0 6px; font-size: 1.25rem; }
+  dialog p { margin: 0 0 12px; color: var(--muted); font-size: .98rem; }
+  dialog input { width: 100%; font: inherit; font-size: 1.6rem; font-weight: 700; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .dlg-actions button { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: none; color: var(--ink); cursor: pointer; }
+  .dlg-actions button.primary { background: var(--red); border-color: var(--red); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) { .seg { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Repostaje</h1>
+    <button class="cap-btn" id="capBtn" type="button">Depósito 52 L</button>
+  </header>
+
+  <section class="gauge" aria-live="polite">
+    <div class="big"><span class="num" id="litros">0,00</span><span class="unit">litros</span></div>
+    <p class="sub" id="pctLine">Introduce el precio y el importe</p>
+    <p class="sub2" id="pctLine2"></p>
+    <div class="tank" aria-hidden="true">
+      <div class="seg old" id="segOld"></div>
+      <div class="seg new" id="segNew"></div>
+      <div class="seg over" id="segOver"></div>
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="scale"><span>0</span><span>¼</span><span>½</span><span>¾</span><span>Lleno</span></div>
+    <div class="legend"><span class="l-old">Antes de repostar</span><span class="l-new">Lo que echas</span></div>
+    <p class="warn" id="warn"></p>
+  </section>
+
+  <div class="fields">
+    <label class="field">
+      <span>Precio</span>
+      <div class="row"><input id="precio" type="text" inputmode="decimal" placeholder="1,459" autocomplete="off"><em>€/L</em></div>
+    </label>
+    <label class="field">
+      <span>Importe</span>
+      <div class="row"><input id="importe" type="text" inputmode="decimal" placeholder="40" autocomplete="off"><em>€</em></div>
+    </label>
+  </div>
+
+  <div class="level">
+    <div class="level-head">
+      <span>Nivel antes de repostar</span>
+      <div class="toggle" id="modeToggle" role="group" aria-label="Cómo indicar el nivel">
+        <button type="button" data-mode="aguja">Aguja</button>
+        <button type="button" data-mode="pct">%</button>
+      </div>
+    </div>
+    <div id="modePct" hidden>
+      <label class="pct-row"><input id="nivelPct" type="text" inputmode="decimal" placeholder="25" autocomplete="off" aria-label="Porcentaje que queda en el depósito"><em>% que queda</em></label>
+    </div>
+    <div id="modeAguja">
+    <div class="quick" id="quick">
+      <button type="button" data-v="0">Vacío</button>
+      <button type="button" data-v="25">¼</button>
+      <button type="button" data-v="50">½</button>
+      <button type="button" data-v="75">¾</button>
+      <button type="button" data-v="100">Lleno</button>
+    </div>
+    <input type="range" id="nivel" min="0" max="100" step="1" value="25" aria-label="Nivel antes de repostar en porcentaje">
+    </div>
+    <p class="level-note" id="nivelOut"></p>
+  </div>
+
+  <div class="results">
+    <div class="res"><span>Caben todavía</span><strong id="caben">–</strong></div>
+    <div class="res"><span>Llenar cuesta</span><strong id="llenar">–</strong></div>
+    <div class="res full"><span>Nivel después</span><strong id="despues">–</strong></div>
+  </div>
+
+  <section class="near">
+    <div class="near-head">
+      <h2>Gasolineras cercanas</h2>
+      <div class="toggle" id="fuelToggle" role="group" aria-label="Combustible">
+        <button type="button" data-f="5">Diésel</button>
+        <button type="button" data-f="6">Diésel+</button>
+      </div>
+    </div>
+    <button type="button" class="near-btn" id="nearBtn">Buscar cerca de mí</button>
+    <p class="near-meta" id="nearMeta"></p>
+    <ul class="st-list" id="stList"></ul>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h2>Capacidad del depósito</h2>
+  <p>El Giulia 2.2 diésel lleva 52 litros de serie.</p>
+  <input id="capInput" type="text" inputmode="decimal">
+  <div class="dlg-actions">
+    <button type="button" id="dlgCancel">Cancelar</button>
+    <button type="button" class="primary" id="dlgSave">Guardar</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  const parse = s => {
+    if (!s) return NaN;
+    return parseFloat(String(s).trim().replace(/\s/g, '').replace(',', '.'));
+  };
+  const fmt = (n, d = 2) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  let cap = parse(store.get('cap')) || 52;
+
+  const precio = $('precio'), importe = $('importe'), nivel = $('nivel');
+  precio.value = store.get('precio') || '';
+  const savedNivel = store.get('nivel');
+  if (savedNivel !== null) nivel.value = savedNivel;
+
+  // ticks at eighths
+  const ticks = $('ticks');
+  for (let i = 1; i < 8; i++) { const t = document.createElement('i'); t.style.left = (i * 12.5) + '%'; ticks.appendChild(t); }
+
+  const nivelPct = $('nivelPct');
+  let mode = store.get('mode') || 'aguja';
+  nivelPct.value = nivel.value;
+
+  function setMode(m) {
+    mode = m; store.set('mode', m);
+    $('modePct').hidden = m !== 'pct';
+    $('modeAguja').hidden = m !== 'aguja';
+    document.querySelectorAll('#modeToggle button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    if (m === 'pct') nivelPct.value = nivel.value;
+  }
+
+  function nivelLabel(v) {
+    const map = { 0: 'Vacío', 25: '¼', 50: '½', 75: '¾', 100: 'Lleno' };
+    return map[v] !== undefined ? map[v] + ' (' + v + ' %)' : v + ' %';
+  }
+
+  function render() {
+    $('capBtn').textContent = 'Depósito ' + fmt(cap, cap % 1 ? 1 : 0) + ' L';
+    const p = parse(precio.value), m = parse(importe.value), lv = Number(nivel.value);
+    $('nivelOut').innerHTML = 'Quedan <b>' + fmt(cap * lv / 100, 1) + ' L</b> (' + nivelLabel(lv) + ')';
+    document.querySelectorAll('#quick button').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === lv));
+
+    const antes = cap * lv / 100;
+    const hueco = cap - antes;
+    $('caben').textContent = fmt(hueco, 1) + ' L';
+    $('llenar').textContent = p > 0 ? fmt(hueco * p) + ' €' : '–';
+
+    $('segOld').style.width = lv + '%';
+    let warn = '';
+
+    if (p > 0 && m > 0) {
+      const l = m / p;
+      const pct = l / cap * 100;
+      $('litros').textContent = fmt(l);
+      $('pctLine').innerHTML = 'Eso es el <b>' + fmt(pct, 1) + ' %</b> del depósito';
+      const hp = hueco > 0 ? Math.min(l / hueco * 100, 100) : 100;
+      $('pctLine2').textContent = hueco > 0 ? 'Llenas el ' + fmt(hp, 0) + ' % de lo que faltaba' : 'El depósito ya está lleno';
+      const entra = Math.min(l, hueco);
+      $('segNew').style.left = lv + '%';
+      $('segNew').style.width = (entra / cap * 100) + '%';
+      if (l > hueco + 0.05) {
+        const sobra = l - hueco;
+        warn = 'No cabe todo: sobran ' + fmt(sobra, 1) + ' L (' + fmt(sobra * p) + ' €). Con ' + fmt(hueco * p) + ' € lo llenas.';
+        $('segOver').style.left = '100%'; $('segOver').style.width = '0';
+        $('despues').textContent = 'Lleno';
+      } else {
+        $('despues').textContent = fmt((antes + l) / cap * 100, 0) + ' %  ·  ' + fmt(antes + l, 1) + ' L';
+      }
+    } else {
+      $('litros').textContent = '0,00';
+      $('pctLine').textContent = 'Introduce el precio y el importe';
+      $('pctLine2').textContent = '';
+      $('segNew').style.width = '0';
+      $('despues').textContent = fmt(lv, 0) + ' %';
+    }
+    $('despues').textContent = $('despues').textContent.replace('  ·  ', ' / ');
+    $('warn').textContent = warn;
+  }
+
+  precio.addEventListener('input', () => { store.set('precio', precio.value); render(); });
+  importe.addEventListener('input', render);
+  nivel.addEventListener('input', () => { store.set('nivel', nivel.value); render(); });
+  nivelPct.addEventListener('input', () => {
+    let v = parse(nivelPct.value);
+    if (isNaN(v)) return;
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    nivel.value = v; store.set('nivel', String(v)); render();
+  });
+  $('modeToggle').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setMode(b.dataset.mode); render();
+    if (b.dataset.mode === 'pct') nivelPct.focus();
+  });
+  setMode(mode);
+  $('quick').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    nivel.value = b.dataset.v; store.set('nivel', nivel.value); render();
+  });
+
+  const dlg = $('dlg');
+  $('capBtn').addEventListener('click', () => {
+    $('capInput').value = fmt(cap, cap % 1 ? 1 : 0);
+    if (dlg.showModal) dlg.showModal(); else {
+      const v = parse(prompt('Capacidad del depósito (L)', cap));
+      if (v > 0) { cap = v; store.set('cap', String(v)); render(); }
+    }
+  });
+  $('dlgCancel').addEventListener('click', () => dlg.close());
+  $('dlgSave').addEventListener('click', () => {
+    const v = parse($('capInput').value);
+    if (v > 0 && v < 200) { cap = v; store.set('cap', String(v)); }
+    dlg.close(); render();
+  });
+
+  // ---- Gasolineras cercanas ----
+  let fuel = Number(store.get('fuel')) || 5;
+  let datos = null, pos = null;
+  const setFuel = f => {
+    fuel = f; store.set('fuel', String(f));
+    document.querySelectorAll('#fuelToggle button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f));
+  };
+  setFuel(fuel);
+  $('fuelToggle').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setFuel(Number(b.dataset.f)); if (datos && pos) pintar();
+  });
+
+  const dist = (a, b, c, d) => {
+    const R = 6371, r = Math.PI / 180;
+    const x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  };
+  const cap1 = t => t.toLowerCase().replace(/(^|\s|\/)\S/g, m => m.toUpperCase());
+
+  function pintar() {
+    const cerca = datos.estaciones
+      .filter(e => e[fuel])
+      .map(e => ({ e, km: dist(pos.lat, pos.lon, e[3], e[4]) }))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, 15);
+    const ul = $('stList'); ul.innerHTML = '';
+    if (!cerca.length) { $('nearMeta').textContent = 'No hay gasolineras con ese combustible en los datos.'; return; }
+    const min = Math.min(...cerca.map(c => c.e[fuel]));
+    $('nearMeta').textContent = 'Las 15 más cercanas. Precios del Ministerio, ' + datos.fecha + '. Toca una para usar su precio.';
+    cerca.forEach(({ e, km }) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'st';
+      const n = document.createElement('span'); n.className = 'name'; n.textContent = cap1(e[0] || 'Sin nombre');
+      const pr = document.createElement('span'); pr.className = 'price' + (e[fuel] === min ? ' best' : '');
+      pr.textContent = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €';
+      const a = document.createElement('span'); a.className = 'addr';
+      a.textContent = (km < 1 ? Math.round(km * 1000) + ' m' : fmt(km, 1) + ' km') + ', ' + cap1(e[1]) + ', ' + cap1(e[2]);
+      b.append(n, pr, a);
+      b.addEventListener('click', () => {
+        precio.value = e[fuel].toLocaleString('es-ES', { minimumFractionDigits: 3 });
+        store.set('precio', precio.value);
+        document.querySelectorAll('.st').forEach(x => x.classList.remove('sel'));
+        b.classList.add('sel');
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+
+  $('nearBtn').addEventListener('click', async () => {
+    const meta = $('nearMeta');
+    if (!navigator.geolocation) { meta.textContent = 'Este navegador no permite la ubicación.'; return; }
+    meta.textContent = 'Buscando tu ubicación…';
+    try {
+      if (!datos) {
+        const r = await fetch('data/precios.json?' + Date.now());
+        if (!r.ok) throw new Error('datos');
+        datos = await r.json();
+      }
+    } catch (err) {
+      meta.textContent = 'No se han podido cargar los precios. Revisa la conexión o que la actualización automática haya funcionado.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(p => {
+      pos = { lat: p.coords.latitude, lon: p.coords.longitude };
+      pintar();
+    }, () => {
+      meta.textContent = 'No tengo permiso para la ubicación. Actívalo para esta web en los ajustes del navegador.';
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
