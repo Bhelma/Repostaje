@@ -1726,15 +1726,29 @@
     esperarOrden();
   }
 
+  // Busca la ejecución de GitHub que lanzó esta orden, para saber si está en cola, en marcha o ha fallado
+  async function ejecucionDe(o) {
+    const c = cfg(); if (!c) return null;
+    const r = await gh(c, '/actions/workflows/' + WORKFLOW + '/runs?event=workflow_dispatch&per_page=10');
+    if (!r.ok) return null;
+    const j = await r.json();
+    const runs = (j.workflow_runs || []).filter(x => new Date(x.created_at).getTime() >= o.t - 20000);
+    return runs.length ? runs[runs.length - 1] : null;  // la más antigua tras el envío = la nuestra
+  }
+  const FASE = { queued: 'en cola en GitHub', waiting: 'en cola en GitHub', pending: 'en cola en GitHub', requested: 'en cola en GitHub', in_progress: 'hablando con Alfa' };
+  const FALLO = { failure: 'ha fallado', cancelled: 'se ha cancelado', timed_out: 'ha tardado demasiado y GitHub la ha parado', startup_failure: 'no ha podido arrancar' };
+
   async function esperarOrden() {
     if (esperando || !orden) return;
     esperando = true; pintarBotones();
+    let vuelta = 0, fase = 'esperando a GitHub', terminadaEn = 0;
     try {
       while (orden) {
         const o = orden, a = ACC[o.accion] || ACC.estado, seg = Math.round((Date.now() - o.t) / 1000);
-        if (seg > 420) { terminarOrden('No ha llegado respuesta en 7 minutos. Mira en GitHub la pestaña Actions del repositorio privado.', 'err'); break; }
-        ordenMsg(a.txt + ': esperando respuesta del coche… ' + Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0') + ' (suele tardar 1-2 minutos)');
+        if (seg > 600) { terminarOrden('No ha llegado respuesta en 10 minutos. Mira en GitHub la pestaña Actions del repositorio privado.', 'err'); break; }
+        ordenMsg(a.txt + ': ' + fase + '… ' + Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0') + ' (suele tardar 1-2 minutos)');
         await new Promise(r => setTimeout(r, 8000));
+        vuelta++;
         try {
           const res = await leerRepo(COCHE);
           const u = res.datos && res.datos.ultima_orden;
@@ -1744,6 +1758,16 @@
             if (u.ok === true) terminarOrden(a.hecho + ' (' + hora + ').', 'ok');
             else if (u.ok === false) terminarOrden(a.txt + ': ' + u.mensaje, 'err');
             else terminarOrden(a.txt + ': ' + (u.mensaje || 'sin confirmación.'), o.accion === 'estado' ? 'ok' : 'err');
+            break;
+          }
+          if (vuelta % 2 === 0) {
+            const run = await ejecucionDe(o);
+            if (run && run.status === 'completed') {
+              if (run.conclusion !== 'success') { terminarOrden(a.txt + ': la ejecución en GitHub ' + (FALLO[run.conclusion] || 'ha terminado con error (' + run.conclusion + ')') + '. Ábrela en GitHub → Actions → «Datos del coche» para ver el motivo.', 'err'); break; }
+              if (!terminadaEn) terminadaEn = Date.now();
+              fase = 'guardando el resultado';
+              if (Date.now() - terminadaEn > 45000) { terminarOrden(a.txt + ': GitHub terminó, pero no ha dejado el resultado en coche.json. Mira el registro en Actions.', 'err'); break; }
+            } else if (run) fase = FASE[run.status] || run.status;
           }
         } catch (e) { /* se reintenta en la siguiente vuelta */ }
       }
@@ -1756,7 +1780,7 @@
   }
 
   $('carRefresh').addEventListener('click', () => enviarOrden('estado'));
-  if (orden && Date.now() - orden.t > 420000) { orden = null; store.set('cocheOrden', ''); }
+  if (orden && Date.now() - orden.t > 600000) { orden = null; store.set('cocheOrden', ''); }
   pintarCoche();
   if (cfg()) cargarCoche(true);
   if (orden) esperarOrden();
