@@ -255,7 +255,7 @@
   .map { display: block; width: 100%; height: 210px; border: 0; border-radius: 12px; margin-top: 10px; background: var(--bg); }
   .car-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .car-links a { text-align: center; text-decoration: none; font-weight: 700; color: var(--red); border: 2px solid var(--red); border-radius: 10px; padding: 9px 6px; }
-  .car-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+  .car-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .car-btns button { font: inherit; font-weight: 700; font-size: .98rem; padding: 12px 2px; border-radius: 12px; border: 2px solid var(--red); background: none; color: var(--red); cursor: pointer; }
   .car-btns button:active { background: var(--red); color: #fff; }
   .car-btns button:disabled { opacity: .4; cursor: default; background: none; color: var(--red); }
@@ -586,8 +586,8 @@
     <p>Está en la pestaña <b>Mi Giulia</b>, abajo. Los datos salen de los servicios conectados de Alfa (los mismos que ves en My Remote). Un proceso en tu repositorio privado los lee cada 3 horas y los deja en <code>coche.json</code>; la app los muestra aquí.</p>
     <ul>
       <li><b>Actualizar</b>: pide los datos a Alfa en ese momento. Tarda 1-2 minutos.</li>
-      <li><b>Cerrar</b>, <b>Abrir</b>, <b>Luces</b> y <b>Localizar</b>: te piden el PIN de My Remote y tardan 1-2 minutos en llegar al coche. El PIN no se guarda.</li>
-      <li><b>Localizar</b> le pide al coche que envíe su posición ahora. El coche no manda la posición en tiempo real por su cuenta.</li>
+      <li><b>Cerrar</b>, <b>Abrir</b> y <b>Luces</b>: te piden el PIN de My Remote y tardan 1-2 minutos en llegar al coche. El PIN no se guarda.</li>
+      <li><b>Dónde lo aparcaste</b>: la posición que manda el coche al apagarlo. Tu suscripción no permite pedirle la posición en el momento, así que no sirve para seguirlo en marcha.</li>
       <li><b>Usar el dato del coche</b> (en «Nivel antes de repostar») rellena el % y los kilómetros con lo último que envió el coche.</li>
     </ul>
     <p><b>Puesta en marcha</b> (solo una vez)</p>
@@ -1571,8 +1571,8 @@
     // Ubicación
     const u = coche.ubicacion;
     if (u && u.lat != null && u.lon != null) {
-      const su = panel(mid, 'Ubicación');
-      su.append(el('p', 'near-meta', (u.aproximada ? 'Posición aproximada' : 'Posición') + ' enviada ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
+      const su = panel(mid, 'Dónde lo aparcaste');
+      su.append(el('p', 'near-meta', 'Última posición que envió el coche' + (u.aproximada ? ' (aproximada)' : '') + ', ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
       const dy = 0.0035, dx = 0.0055;
       const f = document.createElement('iframe');
       f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer';
@@ -1583,18 +1583,6 @@
       const a2 = el('a', null, 'Abrir en Maps'); a2.href = 'https://www.google.com/maps/search/?api=1&query=' + u.lat + ',' + u.lon;
       [a1, a2].forEach(a => { a.target = '_blank'; a.rel = 'noopener'; links.append(a); });
       su.append(links);
-    }
-
-    // Peticiones de «Localizar»: cuándo se pidió y si llegó posición nueva
-    const locs = (coche.localizaciones || []).slice(-5).reverse();
-    if (locs.length) {
-      const sec = (u && u.lat != null) ? body.ownerDocument.querySelector('#carMid section:last-child') : panel(mid, 'Ubicación');
-      sec.append(el('h3', 'car-h3', 'Peticiones de localizar'));
-      const ul = el('ul', 'kv');
-      const hm = iso => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-      locs.forEach(l => fila(ul, cuando(l.peticion).replace(/ \(.*\)$/, ''),
-        l.ok && l.posicion ? 'posición nueva de las ' + hm(l.posicion) : l.error ? 'error' : 'sin posición nueva'));
-      sec.append(ul);
     }
 
     // Puertas, ventanillas, contacto
@@ -1629,8 +1617,8 @@
     if (cc.plataforma) fila(ul, 'Plataforma conectada', cc.plataforma);
     if (cc.privacidad) fila(ul, 'Modo privacidad', cc.privacidad === 'INACTIVE' ? 'Desactivado' : cc.privacidad === 'ACTIVE' ? 'Activado (no envía ubicación)' : cc.privacidad);
     if (u && u.rumbo != null) fila(ul, 'Rumbo al aparcar', nf(u.rumbo) + '°');
-    const NCMD = { RDL: 'Cerrar', RDU: 'Abrir', ROLIGHTS: 'Luces', VF: 'Localizar' };
-    if ((coche.comandos || []).length) fila(ul, 'Órdenes disponibles', coche.comandos.map(c => NCMD[c] || c).join(', '));
+    const NCMD = { RDL: 'Cerrar', RDU: 'Abrir', ROLIGHTS: 'Luces' };
+    if ((coche.comandos || []).length) fila(ul, 'Órdenes disponibles', coche.comandos.filter(c => NCMD[c]).map(c => NCMD[c]).join(', '));
     if ((coche.servicios || []).length) fila(ul, 'Servicios activos', coche.servicios.join(', '));
     Object.entries(coche.otros || {}).forEach(([k, v]) => fila(ul, k, typeof v === 'object' ? JSON.stringify(v) : String(v)));
     fila(ul, 'Consultado a Alfa', cuando(coche.consultado));
@@ -1655,8 +1643,8 @@
   // Mando a distancia
   function pintarBotones() {
     const box = $('carBtns'); box.innerHTML = '';
-    const disp = coche && coche.comandos && coche.comandos.length ? coche.comandos : ['RDL', 'RDU', 'ROLIGHTS', 'VF'];
-    ['cerrar', 'abrir', 'luces', 'localizar'].forEach(k => {
+    const disp = coche && coche.comandos && coche.comandos.length ? coche.comandos : ['RDL', 'RDU', 'ROLIGHTS'];
+    ['cerrar', 'abrir', 'luces'].forEach(k => {
       const b = el('button', null, ACC[k].txt); b.type = 'button';
       b.disabled = !!orden || !cfg() || !disp.includes(ACC[k].cmd);
       b.addEventListener('click', () => enviarOrden(k));
