@@ -230,6 +230,38 @@
   .dlg-actions button { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: none; color: var(--ink); cursor: pointer; }
   .dlg-actions button.primary { background: var(--red); border-color: var(--red); color: #fff; }
 
+  /* Mi Giulia */
+  .car-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .car-grid .res { background: var(--bg); }
+  .car-grid .res strong { font-size: 1.35rem; }
+  .car-grid .res small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
+  .car-grid .res.alerta strong, .car-grid .res.alerta small { color: var(--warn); }
+  .car-h3 { margin: 18px 0 0; font-size: 1.08rem; }
+  .tyres { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 10px; align-items: center; margin-top: 10px; background: var(--bg); border-radius: 14px; padding: 12px; }
+  .tyres .carro { grid-column: 2; grid-row: 1 / span 2; height: 118px; border: 2px solid var(--line); border-radius: 28px 28px 18px 18px; position: relative; }
+  .tyres .carro::before { content: "delante"; position: absolute; top: 8px; left: 0; right: 0; text-align: center; color: var(--muted); font-size: .75rem; }
+  .tyre { text-align: center; }
+  .tyre b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+  .tyre span { color: var(--muted); font-size: .85rem; }
+  .tyre.bad b, .tyre.bad span { color: var(--warn); }
+  .map { display: block; width: 100%; height: 210px; border: 0; border-radius: 12px; margin-top: 10px; background: var(--bg); }
+  .car-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .car-links a { text-align: center; text-decoration: none; font-weight: 700; color: var(--red); border: 2px solid var(--red); border-radius: 10px; padding: 9px 6px; }
+  .car-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+  .car-btns button { font: inherit; font-weight: 700; font-size: .98rem; padding: 12px 2px; border-radius: 12px; border: 2px solid var(--red); background: none; color: var(--red); cursor: pointer; }
+  .car-btns button:active { background: var(--red); color: #fff; }
+  .car-btns button:disabled { opacity: .4; cursor: default; background: none; color: var(--red); }
+  .kv { list-style: none; padding: 0; margin: 8px 0 0; }
+  .kv li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .98rem; }
+  .kv li > span:first-child { color: var(--muted); flex: none; }
+  .kv li > span:last-child { text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .car-details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .car-details summary { font-weight: 700; cursor: pointer; }
+  .car-warn { color: var(--warn); font-weight: 600; margin: 8px 0 0; font-size: .95rem; }
+  .car-orden.ok { color: var(--ink); }
+  .car-orden.err { color: var(--warn); font-weight: 600; }
+  .use-car { display: block; margin-top: 8px; text-align: left; }
+
   @media (prefers-reduced-motion: reduce) { .seg { transition: none; } }
 </style>
 </head>
@@ -291,6 +323,7 @@
     <input type="range" id="nivel" min="0" max="100" step="1" value="25" aria-label="Nivel antes de repostar en porcentaje">
     </div>
     <p class="level-note" id="nivelOut"></p>
+    <button type="button" class="link-btn use-car" id="useCar" hidden></button>
   </div>
 
   <div class="results">
@@ -318,6 +351,18 @@
     <button type="button" class="near-btn" id="saveBtn">Guardar repostaje</button>
     <p class="near-meta" id="saveMsg"></p>
   </div>
+
+  <section class="near" id="car">
+    <div class="near-head">
+      <h2>Mi Giulia</h2>
+      <button type="button" class="link-btn" id="carRefresh">Actualizar</button>
+    </div>
+    <p class="near-meta" id="carMeta"></p>
+    <div id="carBody"></div>
+    <h3 class="car-h3">Mando a distancia</h3>
+    <div class="car-btns" id="carBtns"></div>
+    <p class="near-meta car-orden" id="carOrden"></p>
+  </section>
 
   <section class="near">
     <div class="near-head">
@@ -466,7 +511,7 @@
       <li><b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
       <li><b>Token name</b>: <code>Repostaje móvil</code>. <b>Expiration</b>: la más larga que te deje.</li>
       <li><b>Repository access</b>: <b>Only select repositories</b> y elige solo <code>repostaje-datos</code>.</li>
-      <li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b>: <b>Read and write</b>. No toques nada más.</li>
+      <li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b>: <b>Read and write</b>. Si vas a usar «Mi Giulia», también <b>Actions</b>: <b>Read and write</b>.</li>
       <li>Pulsa <b>Generate token</b> y copia la clave (empieza por <code>github_pat_</code>). Solo se ve una vez; si la pierdes, genera otra.</li>
     </ol>
     <p><b>3. Conéctala en la app</b></p>
@@ -476,6 +521,24 @@
       <li>Debe salir «Copia al día». En GitHub verás el fichero <code>repostajes.json</code>.</li>
     </ol>
     <p class="tip">Si la clave caduca, la app lo avisa en rojo: genera otra y vuelve al paso 3. Si pierdes el móvil, bórrala en la misma pantalla de GitHub donde la creaste.</p>
+  </details>
+  <details>
+    <summary>Mi Giulia: datos y mando a distancia</summary>
+    <p>Los datos salen de los servicios conectados de Alfa (los mismos que ves en My Remote). Un proceso en tu repositorio privado los lee cada 3 horas y los deja en <code>coche.json</code>; la app los muestra aquí.</p>
+    <ul>
+      <li><b>Actualizar</b>: pide los datos a Alfa en ese momento. Tarda 1-2 minutos.</li>
+      <li><b>Cerrar</b>, <b>Abrir</b>, <b>Luces</b> y <b>Localizar</b>: te piden el PIN de My Remote y tardan 1-2 minutos en llegar al coche. El PIN no se guarda.</li>
+      <li><b>Localizar</b> le pide al coche que envíe su posición ahora. El coche no manda la posición en tiempo real por su cuenta.</li>
+      <li><b>Usar el dato del coche</b> (en «Nivel antes de repostar») rellena el % y los kilómetros con lo último que envió el coche.</li>
+    </ul>
+    <p><b>Puesta en marcha</b> (solo una vez)</p>
+    <ol>
+      <li>En el repositorio privado: <b>Settings → Secrets and variables → Actions</b>, secrets <code>UCONNECT_EMAIL</code> y <code>UCONNECT_PASSWORD</code>.</li>
+      <li><b>Settings → Actions → General → Workflow permissions</b>: <b>Read and write permissions</b>.</li>
+      <li>En tu clave de GitHub añade el permiso <b>Actions: Read and write</b> (mira «Copia en GitHub: crear la clave»).</li>
+      <li>Pulsa <b>Actualizar</b> aquí arriba, o en GitHub <b>Actions → Datos del coche → Run workflow</b>.</li>
+    </ol>
+    <p class="tip">Si varias veces seguidas pones mal el PIN, Alfa puede bloquearlo en su app. Si una orden «no se confirma a tiempo», puede que se haya hecho igualmente.</p>
   </details>
   <details>
     <summary>Copias en Excel y de seguridad</summary>
@@ -489,6 +552,16 @@
     <p>Abre la web en Chrome → menú ⋮ → <b>Instalar aplicación</b> (o «Añadir a pantalla de inicio»). Tendrá su icono, se abrirá a pantalla completa y funcionará sin cobertura con los últimos datos.</p>
   </details>
   <div class="dlg-actions"><button type="button" class="primary" id="helpClose">Cerrar</button></div>
+</dialog>
+
+<dialog id="pinDlg">
+  <h2 id="pinTit">PIN de My Remote</h2>
+  <p>El mismo PIN de 4 cifras que usas en la app de Alfa. No se guarda en ningún sitio.</p>
+  <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="PIN de My Remote">
+  <div class="dlg-actions">
+    <button type="button" id="pinCancel">Cancelar</button>
+    <button type="button" class="primary" id="pinOk">Enviar</button>
+  </div>
 </dialog>
 
 <dialog id="dlg">
@@ -1187,16 +1260,306 @@
     store.set('gh', JSON.stringify({ repo, token }));
     $('syncForm').hidden = true;
     sincronizar();
+    if (typeof cargarCoche === 'function') cargarCoche(true);
   });
   $('ghDisconnect').addEventListener('click', () => {
     if (!confirm('¿Desconectar? Los repostajes se quedan en el móvil y en GitHub, pero dejarán de sincronizarse.')) return;
     store.set('gh', ''); $('ghToken').value = ''; $('syncForm').hidden = true;
     estado('Sin configurar. Tus repostajes solo están en este móvil.', '');
+    store.set('coche', ''); coche = null; pintarCoche();
   });
 
   window.addEventListener('online', () => sincronizar());
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizar(); });
   if (cfg()) sincronizar();
+
+  // ---- Mi Giulia: datos del coche y mando a distancia ----
+  const COCHE = 'coche.json', COCHE_HIST = 'coche-historial.json', WORKFLOW = 'coche.yml';
+  let coche = null, cocheHist = null, cocheMsg = '', cocheLeido = 0, orden = null, esperando = false;
+  try { coche = JSON.parse(store.get('coche')) || null; } catch (e) {}
+  try { orden = JSON.parse(store.get('cocheOrden')) || null; } catch (e) {}
+  const ACC = {
+    cerrar: { cmd: 'RDL', txt: 'Cerrar', hecho: 'Puertas cerradas', pin: true },
+    abrir: { cmd: 'RDU', txt: 'Abrir', hecho: 'Puertas abiertas', pin: true, aviso: '¿Abrir las puertas del coche?' },
+    luces: { cmd: 'ROLIGHTS', txt: 'Luces', hecho: 'Luces encendidas', pin: true },
+    localizar: { cmd: 'VF', txt: 'Localizar', hecho: 'Ubicación actualizada', pin: true },
+    estado: { txt: 'Actualizar', hecho: 'Datos actualizados', pin: false }
+  };
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const nf = (n, d = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
+  function cuando(iso) {
+    if (!iso) return 'sin fecha';
+    const d = new Date(iso); if (isNaN(d)) return iso;
+    const hm = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+    const dias = Math.floor((hoy0 - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    const min = Math.round((Date.now() - d) / 6e4);
+    const hace = min < 1 ? 'ahora mismo' : min < 60 ? 'hace ' + min + ' min' : min < 48 * 60 ? 'hace ' + Math.round(min / 60) + ' h' : 'hace ' + Math.round(min / 1440) + ' días';
+    const dia = dias === 0 ? 'hoy' : dias === 1 ? 'ayer' : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    return dia + ' a las ' + hm + ' (' + hace + ')';
+  }
+  function tarjeta(titulo, valor, nota, alerta) {
+    const r = el('div', 'res' + (alerta ? ' alerta' : ''));
+    r.append(el('span', null, titulo), el('strong', null, valor));
+    if (nota) r.append(el('small', null, nota));
+    return r;
+  }
+  function fila(ul, k, v) { const li = el('li'); li.append(el('span', null, k), el('span', null, v)); ul.appendChild(li); }
+
+  async function leerRepo(nombre) {
+    const c = cfg(); if (!c) return {};
+    const r = await gh(c, '/contents/' + nombre, { headers: { 'Accept': 'application/vnd.github.raw+json' } });
+    if (r.status === 404) return { falta: true };
+    if (!r.ok) throw { status: r.status };
+    return { datos: await r.json() };
+  }
+
+  async function cargarCoche(forzar) {
+    if (!cfg()) { pintarCoche(); return; }
+    if (!forzar && Date.now() - cocheLeido < 60000) return;
+    cocheLeido = Date.now();
+    try {
+      const [a, b] = await Promise.all([leerRepo(COCHE), leerRepo(COCHE_HIST).catch(() => ({}))]);
+      if (a.falta) cocheMsg = 'falta';
+      else if (a.datos) { coche = a.datos; store.set('coche', JSON.stringify(coche)); cocheMsg = ''; }
+      if (b && b.datos) cocheHist = b.datos;
+    } catch (e) {
+      cocheMsg = e && e.status ? errorTexto(e.status) : 'Sin conexión: muestro los últimos datos guardados.';
+    }
+    pintarCoche();
+  }
+
+  const CIERRES = [
+    ['contacto', 'Contacto', v => v ? 'Puesto' : 'Quitado'],
+    ['puerta_conductor', 'Puerta conductor', v => v ? 'Cerrada' : 'Sin cerrar'],
+    ['puerta_acompanante', 'Puerta acompañante', v => v ? 'Cerrada' : 'Sin cerrar'],
+    ['puerta_tras_izq', 'Puerta trasera izq.', v => v ? 'Cerrada' : 'Sin cerrar'],
+    ['puerta_tras_dcha', 'Puerta trasera dcha.', v => v ? 'Cerrada' : 'Sin cerrar'],
+    ['maletero', 'Maletero', v => v ? 'Cerrado' : 'Sin cerrar'],
+    ['porton', 'Portón', v => v ? 'Cerrado' : 'Sin cerrar'],
+    ['ventanilla_conductor', 'Ventanilla conductor', v => v ? 'Subida' : 'Bajada'],
+    ['ventanilla_acompanante', 'Ventanilla acompañante', v => v ? 'Subida' : 'Bajada'],
+    ['ventanilla_tras_izq', 'Ventanilla trasera izq.', v => v ? 'Subida' : 'Bajada'],
+    ['ventanilla_tras_dcha', 'Ventanilla trasera dcha.', v => v ? 'Subida' : 'Bajada'],
+    ['techo', 'Techo', v => v ? 'Cerrado' : 'Abierto'],
+    ['climatizador', 'Climatizador', v => v ? 'Encendido' : 'Apagado']
+  ];
+  const RUEDAS = { FL: [1, 1, 'Del. izq.'], FR: [3, 1, 'Del. dcha.'], RL: [1, 2, 'Tras. izq.'], RR: [3, 2, 'Tras. dcha.'] };
+
+  function pintarCoche() {
+    const body = $('carBody'), meta = $('carMeta');
+    body.innerHTML = '';
+    pintarUsarCoche(); pintarBotones();
+    if (!cfg()) { meta.textContent = 'Conecta la copia en GitHub (en «Mis repostajes») para ver aquí los datos del coche.'; return; }
+    if (!coche) {
+      meta.textContent = cocheMsg === 'falta' ? 'Aún no hay datos del coche. Pulsa «Actualizar» (tarda 1-2 minutos).' : (cocheMsg || 'Cargando los datos del coche…');
+      return;
+    }
+    meta.textContent = 'Último dato del coche: ' + cuando(coche.dato) + '.' + (cocheMsg && cocheMsg !== 'falta' ? ' ' + cocheMsg : '');
+    if (coche.ultimo_error && coche.ultimo_error.mensaje) body.append(el('p', 'car-warn', 'Última consulta (' + cuando(coche.ultimo_error.hora) + '): ' + coche.ultimo_error.mensaje));
+
+    // Datos principales
+    const g = el('div', 'car-grid');
+    const cb = coche.combustible || {};
+    if (coche.km != null) g.append(tarjeta('Kilómetros', nf(coche.km) + ' km'));
+    if (cb.litros != null || cb.pct != null) {
+      const partes = [cb.litros != null ? nf(cb.litros) + ' L' : null, cb.pct != null ? nf(cb.pct) + ' %' : null].filter(Boolean).join(' · ');
+      const nota = cb.bajo ? 'En reserva' : cb.litros != null ? 'Caben ' + nf(Math.max(0, cap - cb.litros)) + ' L' : '';
+      g.append(tarjeta('Combustible', partes, nota, cb.bajo));
+    }
+    if (cb.autonomia_km != null) g.append(tarjeta('Autonomía', nf(cb.autonomia_km) + ' km'));
+    const rv = coche.revision || {};
+    if (rv.km != null || rv.dias != null) {
+      g.append(tarjeta('Próxima revisión', rv.km != null ? 'en ' + nf(rv.km) + ' km' : 'en ' + nf(rv.dias) + ' días',
+        rv.km != null && coche.km != null ? 'a los ' + nf(coche.km + rv.km) + ' km' + (rv.dias != null ? ' o en ' + nf(rv.dias) + ' días' : '') : '', rv.km != null && rv.km < 1500));
+    }
+    const bt = coche.bateria || {};
+    if (bt.voltios != null) g.append(tarjeta('Batería 12 V', nf(bt.voltios, 1) + ' V', bt.estado ? 'Estado: ' + bt.estado : (bt.voltios >= 13.2 ? 'Cargando (motor en marcha)' : bt.voltios < 12.2 ? 'Baja' : 'Normal'), bt.voltios < 12.2));
+    if (coche.aceite != null) g.append(tarjeta('Aceite', String(coche.aceite) + (typeof coche.aceite === 'number' ? ' %' : '')));
+    (coche.trips || []).forEach(t => g.append(tarjeta(t.nombre || 'Trip', t.km != null ? nf(t.km) + ' km' : '–', t.l100 ? nf(t.l100, 1) + ' L/100 km' : '')));
+    if (g.childElementCount) body.append(g);
+
+    // Neumáticos
+    const nm = (coche.neumaticos || []).filter(n => RUEDAS[n.rueda]);
+    if (nm.length) {
+      body.append(el('h3', 'car-h3', 'Neumáticos'));
+      const t = el('div', 'tyres'); t.append(el('div', 'carro'));
+      nm.forEach(n => {
+        const p = RUEDAS[n.rueda], mal = n.aviso || (n.estado && n.estado !== 'NORMAL');
+        const d = el('div', 'tyre' + (mal ? ' bad' : ''));
+        d.style.gridColumn = p[0]; d.style.gridRow = p[1];
+        d.append(el('b', null, n.bar != null ? nf(n.bar, 2) : '–'), el('span', null, p[2] + (mal ? ' · revisar' : ' · bar')));
+        t.append(d);
+      });
+      body.append(t);
+      if (nm.some(n => n.aviso || (n.estado && n.estado !== 'NORMAL'))) body.append(el('p', 'car-warn', 'El coche avisa de presión anómala en algún neumático.'));
+    }
+
+    // Ubicación
+    const u = coche.ubicacion;
+    if (u && u.lat != null && u.lon != null) {
+      body.append(el('h3', 'car-h3', 'Ubicación'));
+      body.append(el('p', 'near-meta', (u.aproximada ? 'Posición aproximada' : 'Posición') + ' enviada ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
+      const dy = 0.0035, dx = 0.0055;
+      const f = document.createElement('iframe');
+      f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer';
+      f.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + [u.lon - dx, u.lat - dy, u.lon + dx, u.lat + dy].join(',') + '&layer=mapnik&marker=' + u.lat + ',' + u.lon;
+      body.append(f);
+      const links = el('div', 'car-links');
+      const a1 = el('a', null, 'Ir al coche'); a1.href = 'https://www.google.com/maps/dir/?api=1&destination=' + u.lat + ',' + u.lon + '&travelmode=walking';
+      const a2 = el('a', null, 'Abrir en Maps'); a2.href = 'https://www.google.com/maps/search/?api=1&query=' + u.lat + ',' + u.lon;
+      [a1, a2].forEach(a => { a.target = '_blank'; a.rel = 'noopener'; links.append(a); });
+      body.append(links);
+    }
+
+    // Puertas, ventanillas, contacto
+    const ci = coche.cierres || {};
+    const conDato = CIERRES.filter(([k]) => ci[k] != null);
+    body.append(el('h3', 'car-h3', 'Puertas y ventanillas'));
+    if (conDato.length) {
+      const ul = el('ul', 'kv'); conDato.forEach(([k, n, f]) => fila(ul, n, f(ci[k]))); body.append(ul);
+    } else body.append(el('p', 'near-meta', 'Tu Giulia no envía el estado de puertas, ventanillas ni contacto. Si algún día lo manda, aparecerá aquí.'));
+
+    // Últimas lecturas
+    const regs = (cocheHist && cocheHist.registros || []).slice(-8).reverse();
+    if (regs.length) {
+      body.append(el('h3', 'car-h3', 'Últimas lecturas'));
+      const ul = el('ul', 'kv');
+      regs.forEach((r, i) => {
+        const prev = regs[i + 1];
+        const recorrido = prev && r.km != null && prev.km != null && r.km > prev.km ? ' (+' + nf(r.km - prev.km) + ')' : '';
+        fila(ul, cuando(r.t).replace(/ \(.*\)$/, ''), [r.km != null ? nf(r.km) + ' km' + recorrido : null, r.l != null ? nf(r.l) + ' L' : null, r.pct != null ? nf(r.pct) + ' %' : null].filter(Boolean).join(' · '));
+      });
+      body.append(ul);
+    }
+
+    // Más datos
+    const det = el('details', 'car-details'); det.append(el('summary', null, 'Más datos'));
+    const ul = el('ul', 'kv'), cc = coche.coche || {};
+    const COMB = { D: 'Diésel', G: 'Gasolina', E: 'Eléctrico', H: 'Híbrido' };
+    if (cc.marca || cc.modelo) fila(ul, 'Modelo', [cc.marca, cc.modelo].filter(Boolean).join(' '));
+    if (cc['año']) fila(ul, 'Año', String(cc['año']));
+    if (cc.combustible) fila(ul, 'Combustible', COMB[cc.combustible] || cc.combustible);
+    if (cc.region) fila(ul, 'Región', cc.region);
+    if (cc.plataforma) fila(ul, 'Plataforma conectada', cc.plataforma);
+    if (cc.privacidad) fila(ul, 'Modo privacidad', cc.privacidad === 'INACTIVE' ? 'Desactivado' : cc.privacidad === 'ACTIVE' ? 'Activado (no envía ubicación)' : cc.privacidad);
+    if (u && u.rumbo != null) fila(ul, 'Rumbo al aparcar', nf(u.rumbo) + '°');
+    const NCMD = { RDL: 'Cerrar', RDU: 'Abrir', ROLIGHTS: 'Luces', VF: 'Localizar' };
+    if ((coche.comandos || []).length) fila(ul, 'Órdenes disponibles', coche.comandos.map(c => NCMD[c] || c).join(', '));
+    if ((coche.servicios || []).length) fila(ul, 'Servicios activos', coche.servicios.join(', '));
+    Object.entries(coche.otros || {}).forEach(([k, v]) => fila(ul, k, typeof v === 'object' ? JSON.stringify(v) : String(v)));
+    fila(ul, 'Consultado a Alfa', cuando(coche.consultado));
+    det.append(ul); body.append(det);
+  }
+
+  // Rellenar el formulario de repostaje con lo que dice el coche
+  function pintarUsarCoche() {
+    const b = $('useCar'), cb = coche && coche.combustible;
+    if (!cb || cb.pct == null) { b.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = 'Usar el dato del coche: ' + nf(cb.pct) + ' %' + (coche.km != null ? ' y ' + nf(coche.km) + ' km' : '') + ', ' + cuando(coche.dato).replace(/^.* \((.*)\)$/, '$1');
+  }
+  $('useCar').addEventListener('click', () => {
+    const cb = coche && coche.combustible; if (!cb || cb.pct == null) return;
+    const v = Math.max(0, Math.min(100, Math.round(cb.pct)));
+    nivel.value = v; nivelPct.value = v; store.set('nivel', String(v));
+    if (coche.km != null) $('km').value = String(Math.round(coche.km));
+    render();
+  });
+
+  // Mando a distancia
+  function pintarBotones() {
+    const box = $('carBtns'); box.innerHTML = '';
+    const disp = coche && coche.comandos && coche.comandos.length ? coche.comandos : ['RDL', 'RDU', 'ROLIGHTS', 'VF'];
+    ['cerrar', 'abrir', 'luces', 'localizar'].forEach(k => {
+      const b = el('button', null, ACC[k].txt); b.type = 'button';
+      b.disabled = !!orden || !cfg() || !disp.includes(ACC[k].cmd);
+      b.addEventListener('click', () => enviarOrden(k));
+      box.append(b);
+    });
+    $('carRefresh').disabled = !!orden || !cfg();
+    $('carRefresh').textContent = orden && orden.accion === 'estado' ? 'Actualizando…' : 'Actualizar';
+  }
+  function ordenMsg(txt, tipo) { const p = $('carOrden'); p.textContent = txt; p.className = 'near-meta car-orden' + (tipo ? ' ' + tipo : ''); }
+
+  function pedirPin(titulo) {
+    return new Promise(res => {
+      const d = $('pinDlg'), inp = $('pinInput');
+      $('pinTit').textContent = titulo + ': PIN de My Remote';
+      inp.value = '';
+      let hecho = false;
+      const fin = v => { if (hecho) return; hecho = true; if (d.open) d.close(); res(v); };
+      $('pinOk').onclick = () => { const v = inp.value.replace(/\D/g, ''); if (v.length < 4) { inp.focus(); return; } fin(v); };
+      $('pinCancel').onclick = () => fin('');
+      inp.onkeydown = e => { if (e.key === 'Enter') $('pinOk').click(); };
+      d.oncancel = () => fin('');
+      d.showModal(); setTimeout(() => inp.focus(), 50);
+    });
+  }
+
+  async function enviarOrden(accion) {
+    const c = cfg(); if (!c || orden) return;
+    const a = ACC[accion];
+    if (a.aviso && !confirm(a.aviso)) return;
+    let pin = '';
+    if (a.pin) { pin = await pedirPin(a.txt); if (!pin) return; }
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    ordenMsg(a.txt + ': enviando…');
+    let r;
+    try {
+      r = await gh(c, '/actions/workflows/' + WORKFLOW + '/dispatches', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main', inputs: { accion, pin, id } })
+      });
+    } catch (e) { ordenMsg('No he podido conectar con GitHub. Revisa la conexión.', 'err'); return; }
+    pin = '';
+    if (r.status !== 204) {
+      ordenMsg(r.status === 403 ? 'La clave de GitHub no tiene permiso para lanzar el proceso: añádele «Actions: Read and write» (mira la Ayuda).'
+        : r.status === 404 ? 'No encuentro .github/workflows/coche.yml en ' + c.repo + ', o la clave no tiene permiso de Actions.'
+        : r.status === 422 ? 'GitHub ha rechazado la orden. Comprueba que el coche.yml subido es el último.'
+        : errorTexto(r.status), 'err');
+      return;
+    }
+    orden = { id, accion, t: Date.now() };
+    store.set('cocheOrden', JSON.stringify(orden));
+    esperarOrden();
+  }
+
+  async function esperarOrden() {
+    if (esperando || !orden) return;
+    esperando = true; pintarBotones();
+    try {
+      while (orden) {
+        const o = orden, a = ACC[o.accion] || ACC.estado, seg = Math.round((Date.now() - o.t) / 1000);
+        if (seg > 420) { terminarOrden('No ha llegado respuesta en 7 minutos. Mira en GitHub la pestaña Actions del repositorio privado.', 'err'); break; }
+        ordenMsg(a.txt + ': esperando respuesta del coche… ' + Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0') + ' (suele tardar 1-2 minutos)');
+        await new Promise(r => setTimeout(r, 8000));
+        try {
+          const res = await leerRepo(COCHE);
+          const u = res.datos && res.datos.ultima_orden;
+          if (u && u.id === o.id) {
+            coche = res.datos; store.set('coche', JSON.stringify(coche));
+            const hora = new Date(u.hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            if (u.ok === true) terminarOrden(a.hecho + ' (' + hora + ').', 'ok');
+            else if (u.ok === false) terminarOrden(a.txt + ': ' + u.mensaje, 'err');
+            else terminarOrden(a.txt + ': ' + (u.mensaje || 'sin confirmación.'), o.accion === 'estado' ? 'ok' : 'err');
+          }
+        } catch (e) { /* se reintenta en la siguiente vuelta */ }
+      }
+    } finally { esperando = false; }
+  }
+  function terminarOrden(txt, tipo) {
+    orden = null; store.set('cocheOrden', '');
+    ordenMsg(txt, tipo);
+    cargarCoche(true);
+  }
+
+  $('carRefresh').addEventListener('click', () => enviarOrden('estado'));
+  if (orden && Date.now() - orden.t > 420000) { orden = null; store.set('cocheOrden', ''); }
+  pintarCoche();
+  if (cfg()) cargarCoche(true);
+  if (orden) esperarOrden();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { cargarCoche(); if (orden) esperarOrden(); } });
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
