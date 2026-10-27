@@ -7,8 +7,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="Repostaje">
-<title>Repostaje Giulia</title>
+<meta name="apple-mobile-web-app-title" content="Mi Giulia">
+<title>Mi Giulia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -237,9 +237,17 @@
   .car-grid .res small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
   .car-grid .res.alerta strong, .car-grid .res.alerta small { color: var(--warn); }
   .car-h3 { margin: 18px 0 0; font-size: 1.08rem; }
-  .tyres { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 10px; align-items: center; margin-top: 10px; background: var(--bg); border-radius: 14px; padding: 12px; }
-  .tyres .carro { grid-column: 2; grid-row: 1 / span 2; height: 118px; border: 2px solid var(--line); border-radius: 28px 28px 18px 18px; position: relative; }
-  .tyres .carro::before { content: "delante"; position: absolute; top: 8px; left: 0; right: 0; text-align: center; color: var(--muted); font-size: .75rem; }
+  .tyres { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 6px 10px; align-items: center; margin-top: 10px; background: var(--bg); border-radius: 14px; padding: 12px 8px; }
+  .tyres .carro { grid-column: 2; grid-row: 1 / span 2; }
+  .tyres .carro svg { display: block; width: 96px; height: auto; }
+  .carro-svg .cuerpo { fill: var(--red); }
+  .carro-svg .w { fill: #2A2F35; }
+  .carro-svg .w.bad { fill: var(--warn); }
+  .carro-svg .cristal { fill: rgba(20,24,28,.82); }
+  .carro-svg .linea { fill: none; stroke: rgba(0,0,0,.16); stroke-width: 1.6; }
+  .carro-svg .techo { fill: rgba(0,0,0,.12); }
+  .carro-svg .faro { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .85; }
+  .carro-svg .piloto { fill: none; stroke: rgba(0,0,0,.4); stroke-width: 3; stroke-linecap: round; }
   .tyre { text-align: center; }
   .tyre b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
   .tyre span { color: var(--muted); font-size: .85rem; }
@@ -255,8 +263,20 @@
   .kv li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .98rem; }
   .kv li > span:first-child { color: var(--muted); flex: none; }
   .kv li > span:last-child { text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-  .car-details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
-  .car-details summary { font-weight: 700; cursor: pointer; }
+  .car-details summary { font-weight: 700; font-size: 1.25rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
+  .car-details summary::-webkit-details-marker { display: none; }
+  .car-details summary::after { content: "+"; color: var(--red); }
+  .car-details[open] summary::after { content: "–"; }
+  #vCar > .near:first-child, #vCar > div:first-child > .near:first-child { margin-top: 0; }
+
+  /* Pestañas */
+  main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 6px;
+    background: var(--panel); border-top: 1px solid var(--line); padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .tabs button { flex: 1; max-width: 220px; display: flex; flex-direction: column; align-items: center; gap: 2px; font: inherit; font-weight: 600; font-size: .92rem;
+    background: none; border: 0; color: var(--muted); padding: 6px 0 4px; border-radius: 12px; cursor: pointer; }
+  .tabs button svg { width: 26px; height: 26px; }
+  .tabs button.on { color: var(--red); background: var(--red-soft); }
   .car-warn { color: var(--warn); font-weight: 600; margin: 8px 0 0; font-size: .95rem; }
   .car-orden.ok { color: var(--ink); }
   .car-orden.err { color: var(--warn); font-weight: 600; }
@@ -268,13 +288,14 @@
 <body>
 <main>
   <header>
-    <h1>Repostaje</h1>
+    <h1 id="titulo">Repostaje</h1>
     <div class="head-btns">
       <button class="cap-btn" id="capBtn" type="button">Depósito 52 L</button>
       <button class="help-btn" id="helpBtn" type="button" aria-label="Ayuda">?</button>
     </div>
   </header>
 
+  <div id="vRep">
   <section class="gauge" aria-live="polite">
     <div class="big"><span class="num" id="litros">0,00</span><span class="unit">litros</span></div>
     <p class="sub" id="pctLine">Introduce el precio y el importe</p>
@@ -352,18 +373,6 @@
     <p class="near-meta" id="saveMsg"></p>
   </div>
 
-  <section class="near" id="car">
-    <div class="near-head">
-      <h2>Mi Giulia</h2>
-      <button type="button" class="link-btn" id="carRefresh">Actualizar</button>
-    </div>
-    <p class="near-meta" id="carMeta"></p>
-    <div id="carBody"></div>
-    <h3 class="car-h3">Mando a distancia</h3>
-    <div class="car-btns" id="carBtns"></div>
-    <p class="near-meta car-orden" id="carOrden"></p>
-  </section>
-
   <section class="near">
     <div class="near-head">
       <h2>Gasolineras cercanas</h2>
@@ -423,7 +432,37 @@
       </div>
     </div>
   </section>
+  </div>
+
+  <div id="vCar" hidden>
+    <section class="near">
+      <div class="near-head">
+        <h2>Estado</h2>
+        <button type="button" class="link-btn" id="carRefresh">Actualizar</button>
+      </div>
+      <p class="near-meta" id="carMeta"></p>
+      <div id="carTop"></div>
+    </section>
+    <div id="carMid"></div>
+    <section class="near">
+      <div class="near-head"><h2>Mando a distancia</h2></div>
+      <div class="car-btns" id="carBtns"></div>
+      <p class="near-meta car-orden" id="carOrden"></p>
+    </section>
+    <div id="carBottom"></div>
+  </div>
 </main>
+
+<nav class="tabs" id="tabs" aria-label="Secciones">
+  <button type="button" data-v="rep">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4"/><path d="M14 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/></svg>
+    Repostaje
+  </button>
+  <button type="button" data-v="car">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16v-3.5l2.5-5A2 2 0 0 1 6.3 6.5h9.2a2 2 0 0 1 1.6.8l3.2 4.2 1.7.7V16"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/></svg>
+    Mi Giulia
+  </button>
+</nav>
 
 <dialog id="editDlg" class="sheet">
   <h2>Editar repostaje</h2>
@@ -524,7 +563,7 @@
   </details>
   <details>
     <summary>Mi Giulia: datos y mando a distancia</summary>
-    <p>Los datos salen de los servicios conectados de Alfa (los mismos que ves en My Remote). Un proceso en tu repositorio privado los lee cada 3 horas y los deja en <code>coche.json</code>; la app los muestra aquí.</p>
+    <p>Está en la pestaña <b>Mi Giulia</b>, abajo. Los datos salen de los servicios conectados de Alfa (los mismos que ves en My Remote). Un proceso en tu repositorio privado los lee cada 3 horas y los deja en <code>coche.json</code>; la app los muestra aquí.</p>
     <ul>
       <li><b>Actualizar</b>: pide los datos a Alfa en ese momento. Tarda 1-2 minutos.</li>
       <li><b>Cerrar</b>, <b>Abrir</b>, <b>Luces</b> y <b>Localizar</b>: te piden el PIN de My Remote y tardan 1-2 minutos en llegar al coche. El PIN no se guarda.</li>
@@ -536,7 +575,7 @@
       <li>En el repositorio privado: <b>Settings → Secrets and variables → Actions</b>, secrets <code>UCONNECT_EMAIL</code> y <code>UCONNECT_PASSWORD</code>.</li>
       <li><b>Settings → Actions → General → Workflow permissions</b>: <b>Read and write permissions</b>.</li>
       <li>En tu clave de GitHub añade el permiso <b>Actions: Read and write</b> (mira «Copia en GitHub: crear la clave»).</li>
-      <li>Pulsa <b>Actualizar</b> aquí arriba, o en GitHub <b>Actions → Datos del coche → Run workflow</b>.</li>
+      <li>Pulsa <b>Actualizar</b> en la pestaña Mi Giulia, o en GitHub <b>Actions → Datos del coche → Run workflow</b>.</li>
     </ol>
     <p class="tip">Si varias veces seguidas pones mal el PIN, Alfa puede bloquearlo en su app. Si una orden «no se confirma a tiempo», puede que se haya hecho igualmente.</p>
   </details>
@@ -1346,11 +1385,32 @@
   ];
   const RUEDAS = { FL: [1, 1, 'Del. izq.'], FR: [3, 1, 'Del. dcha.'], RL: [1, 2, 'Tras. izq.'], RR: [3, 2, 'Tras. dcha.'] };
 
+  function panel(padre, titulo) {
+    const sec = el('section', 'near'), h = el('div', 'near-head');
+    h.append(el('h2', null, titulo)); sec.append(h); padre.append(sec); return sec;
+  }
+  // Coche visto desde arriba (dibujo propio). Las ruedas cambian de color si el coche avisa.
+  function cocheSVG(nm) {
+    const mal = r => { const n = nm.find(x => x.rueda === r); return n && (n.aviso || (n.estado && n.estado !== 'NORMAL')) ? ' bad' : ''; };
+    return '<svg class="carro-svg" viewBox="0 0 100 220" role="img" aria-label="Coche visto desde arriba, el morro hacia arriba">' +
+      '<rect class="w' + mal('FL') + '" x="5" y="40" width="13" height="32" rx="4"/><rect class="w' + mal('FR') + '" x="82" y="40" width="13" height="32" rx="4"/>' +
+      '<rect class="w' + mal('RL') + '" x="5" y="150" width="13" height="32" rx="4"/><rect class="w' + mal('RR') + '" x="82" y="150" width="13" height="32" rx="4"/>' +
+      '<ellipse class="cuerpo" cx="9" cy="92" rx="5" ry="3"/><ellipse class="cuerpo" cx="91" cy="92" rx="5" ry="3"/>' +
+      '<path class="cuerpo" d="M50 5C32 5 20 9 16 20C13 30 12 44 12 60L12 170C12 190 14 204 20 210C28 215 40 216 50 216C60 216 72 215 80 210C86 204 88 190 88 170L88 60C88 44 87 30 84 20C80 9 68 5 50 5Z"/>' +
+      '<path class="linea" d="M36 14Q34 40 34 76M64 14Q66 40 66 76M24 188Q50 194 76 188"/>' +
+      '<path class="cristal" d="M20 84Q50 72 80 84L74 110Q50 104 26 110Z"/>' +
+      '<path class="techo" d="M26 110Q50 104 74 110L74 150Q50 154 26 150Z"/>' +
+      '<path class="cristal" d="M26 150Q50 154 74 150L79 172Q50 180 21 172Z"/>' +
+      '<path class="cristal" d="M16 90L21 108L21 152L17 168ZM84 90L79 108L79 152L83 168Z"/>' +
+      '<path class="faro" d="M18 19Q24 12 34 10M82 19Q76 12 66 10"/>' +
+      '<path class="piloto" d="M18 203Q25 211 36 212M82 203Q75 211 64 212"/></svg>';
+  }
+
   function pintarCoche() {
-    const body = $('carBody'), meta = $('carMeta');
-    body.innerHTML = '';
+    const body = $('carTop'), mid = $('carMid'), bot = $('carBottom'), meta = $('carMeta');
+    body.innerHTML = ''; mid.innerHTML = ''; bot.innerHTML = '';
     pintarUsarCoche(); pintarBotones();
-    if (!cfg()) { meta.textContent = 'Conecta la copia en GitHub (en «Mis repostajes») para ver aquí los datos del coche.'; return; }
+    if (!cfg()) { meta.textContent = 'Conecta la copia en GitHub (pestaña Repostaje, al final de «Mis repostajes») para ver aquí los datos del coche.'; return; }
     if (!coche) {
       meta.textContent = cocheMsg === 'falta' ? 'Aún no hay datos del coche. Pulsa «Actualizar» (tarda 1-2 minutos).' : (cocheMsg || 'Cargando los datos del coche…');
       return;
@@ -1382,8 +1442,8 @@
     // Neumáticos
     const nm = (coche.neumaticos || []).filter(n => RUEDAS[n.rueda]);
     if (nm.length) {
-      body.append(el('h3', 'car-h3', 'Neumáticos'));
-      const t = el('div', 'tyres'); t.append(el('div', 'carro'));
+      const sn = panel(mid, 'Neumáticos');
+      const t = el('div', 'tyres'), dibujo = el('div', 'carro'); dibujo.innerHTML = cocheSVG(nm); t.append(dibujo);
       nm.forEach(n => {
         const p = RUEDAS[n.rueda], mal = n.aviso || (n.estado && n.estado !== 'NORMAL');
         const d = el('div', 'tyre' + (mal ? ' bad' : ''));
@@ -1391,50 +1451,50 @@
         d.append(el('b', null, n.bar != null ? nf(n.bar, 2) : '–'), el('span', null, p[2] + (mal ? ' · revisar' : ' · bar')));
         t.append(d);
       });
-      body.append(t);
-      if (nm.some(n => n.aviso || (n.estado && n.estado !== 'NORMAL'))) body.append(el('p', 'car-warn', 'El coche avisa de presión anómala en algún neumático.'));
+      sn.append(t);
+      if (nm.some(n => n.aviso || (n.estado && n.estado !== 'NORMAL'))) sn.append(el('p', 'car-warn', 'El coche avisa de presión anómala en algún neumático.'));
     }
 
     // Ubicación
     const u = coche.ubicacion;
     if (u && u.lat != null && u.lon != null) {
-      body.append(el('h3', 'car-h3', 'Ubicación'));
-      body.append(el('p', 'near-meta', (u.aproximada ? 'Posición aproximada' : 'Posición') + ' enviada ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
+      const su = panel(mid, 'Ubicación');
+      su.append(el('p', 'near-meta', (u.aproximada ? 'Posición aproximada' : 'Posición') + ' enviada ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
       const dy = 0.0035, dx = 0.0055;
       const f = document.createElement('iframe');
       f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer';
       f.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + [u.lon - dx, u.lat - dy, u.lon + dx, u.lat + dy].join(',') + '&layer=mapnik&marker=' + u.lat + ',' + u.lon;
-      body.append(f);
+      su.append(f);
       const links = el('div', 'car-links');
       const a1 = el('a', null, 'Ir al coche'); a1.href = 'https://www.google.com/maps/dir/?api=1&destination=' + u.lat + ',' + u.lon + '&travelmode=walking';
       const a2 = el('a', null, 'Abrir en Maps'); a2.href = 'https://www.google.com/maps/search/?api=1&query=' + u.lat + ',' + u.lon;
       [a1, a2].forEach(a => { a.target = '_blank'; a.rel = 'noopener'; links.append(a); });
-      body.append(links);
+      su.append(links);
     }
 
     // Puertas, ventanillas, contacto
     const ci = coche.cierres || {};
     const conDato = CIERRES.filter(([k]) => ci[k] != null);
-    body.append(el('h3', 'car-h3', 'Puertas y ventanillas'));
+    const sp = panel(bot, 'Puertas y ventanillas');
     if (conDato.length) {
-      const ul = el('ul', 'kv'); conDato.forEach(([k, n, f]) => fila(ul, n, f(ci[k]))); body.append(ul);
-    } else body.append(el('p', 'near-meta', 'Tu Giulia no envía el estado de puertas, ventanillas ni contacto. Si algún día lo manda, aparecerá aquí.'));
+      const ul = el('ul', 'kv'); conDato.forEach(([k, n, f]) => fila(ul, n, f(ci[k]))); sp.append(ul);
+    } else sp.append(el('p', 'near-meta', 'Tu Giulia no envía el estado de puertas, ventanillas ni contacto. Si algún día lo manda, aparecerá aquí.'));
 
     // Últimas lecturas
     const regs = (cocheHist && cocheHist.registros || []).slice(-8).reverse();
     if (regs.length) {
-      body.append(el('h3', 'car-h3', 'Últimas lecturas'));
+      const sl = panel(bot, 'Últimas lecturas');
       const ul = el('ul', 'kv');
       regs.forEach((r, i) => {
         const prev = regs[i + 1];
         const recorrido = prev && r.km != null && prev.km != null && r.km > prev.km ? ' (+' + nf(r.km - prev.km) + ')' : '';
         fila(ul, cuando(r.t).replace(/ \(.*\)$/, ''), [r.km != null ? nf(r.km) + ' km' + recorrido : null, r.l != null ? nf(r.l) + ' L' : null, r.pct != null ? nf(r.pct) + ' %' : null].filter(Boolean).join(' · '));
       });
-      body.append(ul);
+      sl.append(ul);
     }
 
     // Más datos
-    const det = el('details', 'car-details'); det.append(el('summary', null, 'Más datos'));
+    const det = el('details', 'car-details'); det.append(el('summary', null, 'Más datos del coche'));
     const ul = el('ul', 'kv'), cc = coche.coche || {};
     const COMB = { D: 'Diésel', G: 'Gasolina', E: 'Eléctrico', H: 'Híbrido' };
     if (cc.marca || cc.modelo) fila(ul, 'Modelo', [cc.marca, cc.modelo].filter(Boolean).join(' '));
@@ -1449,7 +1509,7 @@
     if ((coche.servicios || []).length) fila(ul, 'Servicios activos', coche.servicios.join(', '));
     Object.entries(coche.otros || {}).forEach(([k, v]) => fila(ul, k, typeof v === 'object' ? JSON.stringify(v) : String(v)));
     fila(ul, 'Consultado a Alfa', cuando(coche.consultado));
-    det.append(ul); body.append(det);
+    det.append(ul); const sm = el('section', 'near'); sm.append(det); bot.append(sm);
   }
 
   // Rellenar el formulario de repostaje con lo que dice el coche
@@ -1560,6 +1620,24 @@
   if (cfg()) cargarCoche(true);
   if (orden) esperarOrden();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { cargarCoche(); if (orden) esperarOrden(); } });
+
+  // ---- Pestañas: Repostaje / Mi Giulia ----
+  function vista(v, sinScroll) {
+    v = v === 'car' ? 'car' : 'rep';
+    store.set('vista', v);
+    $('vRep').hidden = v !== 'rep'; $('vCar').hidden = v !== 'car';
+    $('titulo').textContent = v === 'car' ? 'Mi Giulia' : 'Repostaje';
+    $('capBtn').hidden = v !== 'rep';
+    document.querySelectorAll('#tabs button').forEach(b => {
+      const on = b.dataset.v === v; b.classList.toggle('on', on);
+      if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    if (!sinScroll) window.scrollTo(0, 0);
+    if (v === 'car') cargarCoche();
+  }
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
+  const hashVista = { giulia: 'car', coche: 'car', repostaje: 'rep' }[location.hash.slice(1)];
+  vista(hashVista || store.get('vista') || 'rep', true);
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
