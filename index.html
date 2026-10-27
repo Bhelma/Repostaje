@@ -1585,6 +1585,18 @@
       su.append(links);
     }
 
+    // Peticiones de «Localizar»: cuándo se pidió y si llegó posición nueva
+    const locs = (coche.localizaciones || []).slice(-5).reverse();
+    if (locs.length) {
+      const sec = (u && u.lat != null) ? body.ownerDocument.querySelector('#carMid section:last-child') : panel(mid, 'Ubicación');
+      sec.append(el('h3', 'car-h3', 'Peticiones de localizar'));
+      const ul = el('ul', 'kv');
+      const hm = iso => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      locs.forEach(l => fila(ul, cuando(l.peticion).replace(/ \(.*\)$/, ''),
+        l.ok && l.posicion ? 'posición nueva de las ' + hm(l.posicion) : l.error ? 'error' : 'sin posición nueva'));
+      sec.append(ul);
+    }
+
     // Puertas, ventanillas, contacto
     const ci = coche.cierres || {};
     const conDato = CIERRES.filter(([k]) => ci[k] != null);
