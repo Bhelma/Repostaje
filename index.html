@@ -172,6 +172,30 @@
   table.cmp td:first-child { font-weight: 600; max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; }
   table.cmp td.best { color: var(--red); font-weight: 700; }
   table.cmp caption { text-align: left; font-weight: 700; font-size: 1.02rem; padding: 12px 0 2px; }
+  .head-btns { display: flex; gap: 8px; align-items: center; }
+  .help-btn { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--red); background: none; color: var(--red); font: inherit; font-weight: 700; font-size: 1.1rem; cursor: pointer; padding: 0; }
+  .h-item { cursor: pointer; border-radius: 10px; }
+  .h-item:active { background: var(--red-soft); }
+  .h-edit-hint { color: var(--muted); font-size: .85rem; }
+  dialog.sheet { width: min(96vw, 460px); max-height: 92vh; overflow-y: auto; padding: 16px; }
+  dialog.sheet h2 { margin: 0 0 10px; }
+  .ed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ed-grid label { display: block; }
+  .ed-grid label.full { grid-column: 1 / -1; }
+  .ed-grid label span { display: block; color: var(--muted); font-size: .9rem; margin-bottom: 2px; }
+  .ed-grid input { width: 100%; font: inherit; font-size: 1.1rem; font-weight: 600; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .ed-calc { color: var(--muted); font-size: .95rem; margin: 10px 0 0; }
+  .dlg-actions .danger { margin-right: auto; color: var(--red); border-color: var(--red); }
+  .help details { border-top: 1px solid var(--line); padding: 10px 0; }
+  .help details:last-of-type { border-bottom: 1px solid var(--line); }
+  .help summary { font-weight: 700; font-size: 1.08rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 8px; }
+  .help summary::-webkit-details-marker { display: none; }
+  .help summary::after { content: "+"; color: var(--red); font-size: 1.3rem; line-height: 1; }
+  .help details[open] summary::after { content: "–"; }
+  .help p, .help li { color: var(--ink); font-size: 1rem; margin: 8px 0 0; }
+  .help ol, .help ul { padding-left: 1.3em; margin: 6px 0 0; }
+  .help code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: .95em; }
+  .help .tip { color: var(--muted); }
   .sync { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
   .sync-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .sync-head h3 { margin: 0; font-size: 1.1rem; }
@@ -213,7 +237,10 @@
 <main>
   <header>
     <h1>Repostaje</h1>
-    <button class="cap-btn" id="capBtn" type="button">Depósito 52 L</button>
+    <div class="head-btns">
+      <button class="cap-btn" id="capBtn" type="button">Depósito 52 L</button>
+      <button class="help-btn" id="helpBtn" type="button" aria-label="Ayuda">?</button>
+    </div>
   </header>
 
   <section class="gauge" aria-live="polite">
@@ -352,6 +379,117 @@
     </div>
   </section>
 </main>
+
+<dialog id="editDlg" class="sheet">
+  <h2>Editar repostaje</h2>
+  <div class="ed-grid">
+    <label class="full"><span>Fecha y hora</span><input id="edFecha" type="datetime-local"></label>
+    <label class="full"><span>Gasolinera</span><input id="edEst" type="text" list="marcasList" autocomplete="off"></label>
+    <label><span>Precio (€/L)</span><input id="edPrecio" type="text" inputmode="decimal"></label>
+    <label><span>Importe (€)</span><input id="edImporte" type="text" inputmode="decimal"></label>
+    <label><span>Nivel antes (%)</span><input id="edNivel" type="text" inputmode="numeric"></label>
+    <label><span>Kilómetros</span><input id="edKm" type="text" inputmode="numeric"></label>
+  </div>
+  <div class="toggle" id="edFuel" role="group" aria-label="Combustible" style="margin-top:12px">
+    <button type="button" data-c="A">Diésel</button>
+    <button type="button" data-c="P">Diésel+</button>
+  </div>
+  <p class="ed-calc" id="edCalc"></p>
+  <div class="dlg-actions">
+    <button type="button" class="danger" id="edDel">Borrar</button>
+    <button type="button" id="edCancel">Cancelar</button>
+    <button type="button" class="primary" id="edSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="helpDlg" class="sheet help">
+  <h2>Ayuda</h2>
+  <details open>
+    <summary>Calcular un repostaje</summary>
+    <ol>
+      <li>Escribe el <b>precio</b> en €/L que marca el surtidor (o tócalo en la lista de gasolineras y se rellena solo).</li>
+      <li>Escribe el <b>importe</b> en euros que vas a echar.</li>
+      <li>Arriba verás los <b>litros</b>, el <b>% del depósito</b> que suponen y el % de lo que faltaba que llenas.</li>
+    </ol>
+    <p class="tip">La capacidad del depósito (52 L) se cambia tocando el botón «Depósito» de arriba.</p>
+  </details>
+  <details>
+    <summary>Nivel antes de repostar</summary>
+    <p>Dile a la app cuánto combustible tienes antes de echar. Puedes hacerlo de dos formas con el selector:</p>
+    <ul>
+      <li><b>Aguja</b>: botones Vacío, ¼, ½, ¾, Lleno y un deslizador para afinar.</li>
+      <li><b>%</b>: escribes el porcentaje exacto que te marca el coche.</li>
+    </ul>
+    <p>Con eso la barra muestra en gris lo que tenías y en rojo lo que echas, y te dice cuánto cabe todavía y cuánto cuesta llenar. Si el importe no cabe entero, te avisa.</p>
+    <p>Al <b>guardar</b> un repostaje, el nivel se queda en lo que has llenado, para que la barra refleje cómo está el depósito ahora.</p>
+  </details>
+  <details>
+    <summary>Gasolineras cercanas</summary>
+    <ol>
+      <li>Elige <b>Diésel</b> o <b>Diésel+</b> y pulsa <b>Buscar cerca de mí</b>. La primera vez el móvil te pedirá permiso para la ubicación.</li>
+      <li>Verás las 15 más cercanas con su precio; la más barata sale en rojo. En pequeño aparece el precio del otro combustible.</li>
+      <li>Toca una para usar su precio. Pulsa <b>Ir</b> para abrir la ruta en Google Maps (también funciona en Android Auto).</li>
+      <li>En <b>Marca</b> puedes escribir una marca (por ejemplo «galp») para ver solo esas, en un radio de 150 km.</li>
+    </ol>
+    <p class="tip">Los precios son los oficiales del Ministerio y se actualizan cuatro veces al día. La fecha de los datos aparece bajo el botón.</p>
+  </details>
+  <details>
+    <summary>Guardar, editar y borrar repostajes</summary>
+    <ol>
+      <li>Antes de guardar, apunta los <b>kilómetros</b> del cuentakilómetros (opcional, pero sin ellos no hay consumo).</li>
+      <li>Comprueba la <b>gasolinera</b> y el <b>combustible</b>; si elegiste la gasolinera en la lista ya vienen rellenos.</li>
+      <li>Pulsa <b>Guardar repostaje</b>.</li>
+      <li>Para <b>editar</b> uno, tócalo en «Mis repostajes»: puedes cambiar fecha, gasolinera, precio, importe, nivel, kilómetros y combustible. Desde ahí también se borra.</li>
+    </ol>
+  </details>
+  <details>
+    <summary>Comparativas</summary>
+    <ul>
+      <li><b>Precios cerca</b>: cuánto más cuesta el diésel+ en tu zona y una tabla por marca. Aparece al buscar gasolineras.</li>
+      <li><b>Mis repostajes</b>: tus datos reales por combustible y por marca: precio medio, consumo (L/100 km) y coste cada 100 km.</li>
+    </ul>
+    <p class="tip">Para que el consumo sea fiable, apunta siempre los kilómetros y prueba cada combustible varios depósitos seguidos.</p>
+  </details>
+  <details>
+    <summary>Copia en GitHub: crear la clave paso a paso</summary>
+    <p>Tus repostajes se guardan en el móvil. Con esto, además, se copian solos a un repositorio privado tuyo, y si borras el navegador o cambias de móvil se recuperan.</p>
+    <p><b>1. Crea el repositorio privado</b> (solo la primera vez)</p>
+    <ol>
+      <li>En github.com pulsa <b>+</b> (arriba a la derecha) → <b>New repository</b>.</li>
+      <li>Nombre: <code>repostaje-datos</code>. Marca <b>Private</b> y <b>Add a README file</b>.</li>
+      <li>Pulsa <b>Create repository</b>.</li>
+    </ol>
+    <p><b>2. Crea la clave</b></p>
+    <ol>
+      <li>Pulsa tu foto (arriba a la derecha) → <b>Settings</b>.</li>
+      <li>Abajo del todo del menú izquierdo: <b>Developer settings</b>.</li>
+      <li><b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
+      <li><b>Token name</b>: <code>Repostaje móvil</code>. <b>Expiration</b>: la más larga que te deje.</li>
+      <li><b>Repository access</b>: <b>Only select repositories</b> y elige solo <code>repostaje-datos</code>.</li>
+      <li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b>: <b>Read and write</b>. No toques nada más.</li>
+      <li>Pulsa <b>Generate token</b> y copia la clave (empieza por <code>github_pat_</code>). Solo se ve una vez; si la pierdes, genera otra.</li>
+    </ol>
+    <p><b>3. Conéctala en la app</b></p>
+    <ol>
+      <li>Baja hasta <b>Copia en GitHub</b> y pulsa <b>Configurar</b>.</li>
+      <li>Repositorio: <code>tuusuario/repostaje-datos</code>. Pega la clave y pulsa <b>Conectar</b>.</li>
+      <li>Debe salir «Copia al día». En GitHub verás el fichero <code>repostajes.json</code>.</li>
+    </ol>
+    <p class="tip">Si la clave caduca, la app lo avisa en rojo: genera otra y vuelve al paso 3. Si pierdes el móvil, bórrala en la misma pantalla de GitHub donde la creaste.</p>
+  </details>
+  <details>
+    <summary>Copias en Excel y de seguridad</summary>
+    <ul>
+      <li><b>Exportar a Excel (CSV)</b>: descarga todos tus repostajes en la carpeta Descargas.</li>
+      <li><b>Copia de seguridad</b> y <b>Restaurar copia</b>: guardar y recuperar a mano, por si no usas la copia en GitHub.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Instalar en el móvil</summary>
+    <p>Abre la web en Chrome → menú ⋮ → <b>Instalar aplicación</b> (o «Añadir a pantalla de inicio»). Tendrá su icono, se abrirá a pantalla completa y funcionará sin cobertura con los últimos datos.</p>
+  </details>
+  <div class="dlg-actions"><button type="button" class="primary" id="helpClose">Cerrar</button></div>
+</dialog>
 
 <dialog id="dlg">
   <h2>Capacidad del depósito</h2>
@@ -613,10 +751,47 @@
     navigator.geolocation.getCurrentPosition(p => {
       pos = { lat: p.coords.latitude, lon: p.coords.longitude };
       pintar();
+      refrescarDesdeMovil();
     }, () => {
       meta.textContent = 'No tengo permiso para la ubicación. Actívalo para esta web en los ajustes del navegador.';
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   });
+
+
+  // ---- Plan B: si los datos de GitHub son viejos, el móvil pide su provincia directamente al Ministerio ----
+  let refrescado = false;
+  function horasDesde(fecha) {
+    const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/.exec(fecha || '');
+    if (!m) return Infinity;
+    return (Date.now() - new Date(+m[3], m[2] - 1, +m[1], +m[4], +m[5]).getTime()) / 36e5;
+  }
+  async function refrescarDesdeMovil() {
+    if (refrescado || !datos || !pos || horasDesde(datos.fecha) < 12) return;
+    const cercana = datos.estaciones
+      .filter(e => e[9])
+      .map(e => ({ e, km: dist(pos.lat, pos.lon, e[3], e[4]) }))
+      .sort((a, b) => a.km - b.km)[0];
+    if (!cercana || cercana.km > 60) return;
+    refrescado = true;
+    const prov = cercana.e[9];
+    try {
+      const r = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/' + prov,
+        { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+      if (!r.ok) return;
+      const j = await r.json();
+      const n = s => { const v = parseFloat(String(s || '').replace(',', '.')); return isNaN(v) ? null : v; };
+      const nuevas = (j.ListaEESSPrecio || []).map(e => [
+        (e['Rótulo'] || '').trim(), (e['Dirección'] || '').trim(), (e['Localidad'] || '').trim(),
+        n(e['Latitud']), n(e['Longitud (WGS84)']), n(e['Precio Gasoleo A']), n(e['Precio Gasoleo Premium']),
+        n(e['Precio Gasolina 95 E5']), (e['Horario'] || '').trim(), (e['IDProvincia'] || '').trim()
+      ]).filter(e => e[3] != null && e[4] != null);
+      if (!nuevas.length) return;
+      datos = { ...datos, fecha: (j.Fecha || datos.fecha) + ' (tu provincia, directo del Ministerio)',
+        estaciones: datos.estaciones.filter(e => e[9] !== prov).concat(nuevas) };
+      marcasHechas = null;
+      pintar();
+    } catch (e) { /* si el Ministerio no lo permite desde el navegador, seguimos con los datos de GitHub */ }
+  }
 
   // ---- Historial de repostajes ----
   const KEY = 'repostajes';
@@ -673,6 +848,7 @@
       });
       const a = document.createElement('span'); a.className = 'addr';
       a.textContent = fmt(x.litros) + ' L a ' + x.precio.toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €/L' + (x.km ? ', ' + x.km.toLocaleString('es-ES') + ' km' : '');
+      d.addEventListener('click', ev => { if (!ev.target.closest('.h-del')) abrirEdicion(x.id); });
       d.append(n, pr, del, a); li.appendChild(d); ul.appendChild(li);
     });
   }
@@ -683,14 +859,16 @@
     if (!(p > 0 && m > 0)) { msg.textContent = 'Pon el precio y el importe antes de guardar.'; return; }
     const arr = leer();
     arr.push({
-      id: Date.now().toString(36), fecha: new Date().toISOString(), estacion: $('estInput').value.trim(),
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), mod: Date.now(), fecha: new Date().toISOString(), estacion: $('estInput').value.trim(),
       marca: $('estInput').value.trim() ? marcaDe($('estInput').value.split(',')[0]) : '',
       combustible: saveFuel === 6 ? 'P' : 'A',
       precio: p, importe: m, litros: Math.round(m / p * 100) / 100,
       nivel: Number(nivel.value), cap, km: k > 0 ? Math.round(k) : null
     });
     guardar(arr);
-    msg.textContent = 'Guardado: ' + fmt(m / p) + ' L por ' + eur(m) + '.';
+    const despuesPct = Math.min(100, Math.round((cap * Number(nivel.value) / 100 + m / p) / cap * 100));
+    nivel.value = despuesPct; nivelPct.value = despuesPct; store.set('nivel', String(despuesPct));
+    msg.textContent = 'Guardado: ' + fmt(m / p) + ' L por ' + eur(m) + '. El depósito queda al ' + despuesPct + ' %.';
     importe.value = ''; $('km').value = ''; $('estInput').value = ''; render(); pintarHist();
   });
 
@@ -852,6 +1030,57 @@
   setTab(tab);
   pintarMios();
 
+
+  // ---- Editar repostajes ----
+  let editId = null, editFuel = 'A';
+  const pad = n => String(n).padStart(2, '0');
+  const aLocal = iso => { const d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  function setEdFuel(c) { editFuel = c; document.querySelectorAll('#edFuel button').forEach(b => b.classList.toggle('on', b.dataset.c === c)); }
+  function calcEd() {
+    const p = parse($('edPrecio').value), m = parse($('edImporte').value);
+    $('edCalc').textContent = p > 0 && m > 0 ? 'Son ' + fmt(m / p) + ' litros.' : 'Pon precio e importe.';
+  }
+  function abrirEdicion(id) {
+    const x = leer().find(r => r.id === id); if (!x) return;
+    editId = id;
+    $('edFecha').value = aLocal(x.fecha);
+    $('edEst').value = x.estacion || '';
+    $('edPrecio').value = x.precio.toLocaleString('es-ES', { minimumFractionDigits: 3 });
+    $('edImporte').value = x.importe.toLocaleString('es-ES', { minimumFractionDigits: 2 });
+    $('edNivel').value = x.nivel;
+    $('edKm').value = x.km || '';
+    setEdFuel(x.combustible === 'P' ? 'P' : 'A');
+    calcEd();
+    $('editDlg').showModal();
+  }
+  $('edFuel').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setEdFuel(b.dataset.c); });
+  ['edPrecio', 'edImporte'].forEach(i => $(i).addEventListener('input', calcEd));
+  $('edCancel').addEventListener('click', () => $('editDlg').close());
+  $('edDel').addEventListener('click', () => {
+    if (!confirm('¿Borrar este repostaje?')) return;
+    borrar(editId); $('editDlg').close(); pintarHist();
+  });
+  $('edSave').addEventListener('click', () => {
+    const p = parse($('edPrecio').value), m = parse($('edImporte').value);
+    if (!(p > 0 && m > 0)) { $('edCalc').textContent = 'El precio y el importe tienen que ser números mayores que cero.'; return; }
+    const nv = Math.max(0, Math.min(100, Math.round(parse($('edNivel').value) || 0)));
+    const k = parseInt($('edKm').value.replace(/\D/g, ''), 10);
+    const f = $('edFecha').value ? new Date($('edFecha').value) : null;
+    const est = $('edEst').value.trim();
+    const arr = leer().map(x => x.id !== editId ? x : {
+      ...x, mod: Date.now(),
+      fecha: f && !isNaN(f) ? f.toISOString() : x.fecha,
+      estacion: est, marca: est ? marcaDe(est.split(',')[0]) : '',
+      combustible: editFuel, precio: p, importe: m, litros: Math.round(m / p * 100) / 100,
+      nivel: nv, km: k > 0 ? k : null
+    });
+    guardar(arr); $('editDlg').close(); pintarHist();
+  });
+
+  // ---- Ayuda ----
+  $('helpBtn').addEventListener('click', () => $('helpDlg').showModal());
+  $('helpClose').addEventListener('click', () => $('helpDlg').close());
+
   // ---- Copia automática en GitHub (repositorio privado) ----
   const FICHERO = 'repostajes.json';
   let syncTimer = null, sincronizando = false;
@@ -903,7 +1132,11 @@
 
       const borrados = new Set([...(remoto.borrados || []), ...leerBorrados()]);
       const porId = new Map();
-      [...(remoto.repostajes || []), ...leer()].forEach(x => { if (x && x.id && !borrados.has(x.id)) porId.set(x.id, x); });
+      [...(remoto.repostajes || []), ...leer()].forEach(x => {
+        if (!x || !x.id || borrados.has(x.id)) return;
+        const ya = porId.get(x.id);
+        if (!ya || (x.mod || 0) >= (ya.mod || 0)) porId.set(x.id, x);
+      });
       const unidos = [...porId.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
       const listaBorrados = [...borrados];
 
