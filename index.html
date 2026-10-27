@@ -269,6 +269,25 @@
   .car-details[open] summary::after { content: "–"; }
   #vCar > .near:first-child, #vCar > div:first-child > .near:first-child { margin-top: 0; }
 
+  /* Ajustes */
+  .aj h3 { margin: 18px 0 6px; font-size: 1.12rem; border-top: 1px solid var(--line); padding-top: 14px; }
+  .aj h3.primero { border-top: 0; padding-top: 0; margin-top: 4px; }
+  .aj-estado { color: var(--muted); font-size: .95rem; margin: 4px 0 8px; }
+  .aj-estado:empty { display: none; }
+  .aj-estado b { color: var(--ink); }
+  .aj .near-btn { margin-top: 10px; }
+  .aj .row2 { display: flex; gap: 8px; }
+  .aj .row2 button { flex: 1; }
+  .aj-list { display: grid; gap: 12px; margin-top: 12px; }
+  .chk { display: block; position: relative; padding-left: 32px; font-size: 1rem; line-height: 2; }
+  .chk input[type=checkbox] { position: absolute; left: 0; top: 5px; width: 22px; height: 22px; accent-color: var(--red); margin: 0; }
+  .near-btn:disabled { opacity: .45; cursor: default; }
+  .chk .mini { width: 4.4em; font: inherit; font-size: 1rem; font-weight: 700; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-align: center; }
+  .aj-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .aj-row > span { color: var(--muted); }
+  .res.clic { cursor: pointer; }
+  .help-btn svg { width: 20px; height: 20px; display: block; margin: auto; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 6px;
@@ -291,6 +310,7 @@
     <h1 id="titulo">Repostaje</h1>
     <div class="head-btns">
       <button class="cap-btn" id="capBtn" type="button">Depósito 52 L</button>
+      <button class="help-btn" id="ajBtn" type="button" aria-label="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <button class="help-btn" id="helpBtn" type="button" aria-label="Ayuda">?</button>
     </div>
   </header>
@@ -580,6 +600,19 @@
     <p class="tip">Si varias veces seguidas pones mal el PIN, Alfa puede bloquearlo en su app. Si una orden «no se confirma a tiempo», puede que se haya hecho igualmente.</p>
   </details>
   <details>
+    <summary>Ajustes y notificaciones</summary>
+    <p>Pulsa la <b>rueda dentada</b> de arriba. Ahí fijas el próximo cambio de aceite, los avisos que quieres recibir y otros detalles de la app.</p>
+    <p>Las notificaciones las manda el proceso de GitHub cada vez que lee el coche (cada 3 horas), así que llegan aunque tengas la app cerrada. Cada aviso llega una vez; si se arregla y vuelve a pasar, avisa de nuevo. El del aceite te recuerda cada 1.000 km hasta que pulses «He cambiado el aceite».</p>
+    <p><b>Puesta en marcha</b> (solo una vez)</p>
+    <ol>
+      <li>En el repositorio privado: <b>Actions → Crear claves de avisos → Run workflow</b>.</li>
+      <li>Abre esa ejecución: en el resumen (<b>Summary</b>) verás dos claves.</li>
+      <li>Crea con ellas los secrets <code>VAPID_PUBLICA</code> y <code>VAPID_PRIVADA</code>, y después borra la ejecución (menú ··· → <b>Delete workflow run</b>).</li>
+      <li>Pulsa <b>Actualizar</b> en Mi Giulia, luego en Ajustes <b>Activar en este móvil</b> y <b>Probar</b>.</li>
+    </ol>
+    <p class="tip">Funciona con la app instalada desde Chrome. Si el móvil tiene ahorro de batería agresivo para Chrome, las notificaciones pueden llegar con retraso.</p>
+  </details>
+  <details>
     <summary>Copias en Excel y de seguridad</summary>
     <ul>
       <li><b>Exportar a Excel (CSV)</b>: descarga todos tus repostajes en la carpeta Descargas.</li>
@@ -591,6 +624,58 @@
     <p>Abre la web en Chrome → menú ⋮ → <b>Instalar aplicación</b> (o «Añadir a pantalla de inicio»). Tendrá su icono, se abrirá a pantalla completa y funcionará sin cobertura con los últimos datos.</p>
   </details>
   <div class="dlg-actions"><button type="button" class="primary" id="helpClose">Cerrar</button></div>
+</dialog>
+
+<dialog id="ajDlg" class="sheet aj">
+  <h2>Ajustes</h2>
+
+  <h3 class="primero">Cambio de aceite</h3>
+  <p class="aj-estado" id="ajAceiteEstado"></p>
+  <div class="ed-grid">
+    <label class="full"><span>Próximo cambio a los (km)</span><input id="ajAceiteKm" type="text" inputmode="numeric" placeholder="120000" autocomplete="off"></label>
+    <label><span>Avisar antes (km)</span><input id="ajAceiteAntes" type="text" inputmode="numeric" autocomplete="off"></label>
+    <label><span>Lo cambio cada (km)</span><input id="ajAceiteInt" type="text" inputmode="numeric" autocomplete="off"></label>
+  </div>
+  <button type="button" class="near-btn ghost" id="ajAceiteHecho">He cambiado el aceite</button>
+
+  <h3>Notificaciones</h3>
+  <p class="aj-estado" id="ajPushEstado"></p>
+  <div class="row2">
+    <button type="button" class="near-btn" id="ajPushOn">Activar en este móvil</button>
+    <button type="button" class="near-btn ghost" id="ajPushTest">Probar</button>
+  </div>
+  <div class="aj-list">
+    <label class="chk"><input type="checkbox" id="avAceite"> Cambio de aceite (con los km de arriba)</label>
+    <label class="chk"><input type="checkbox" id="avNeum"> Neumáticos: aviso del coche o menos de <input id="avNeumBar" class="mini" type="text" inputmode="decimal"> bar</label>
+    <label class="chk"><input type="checkbox" id="avComb"> Combustible por debajo del <input id="avCombPct" class="mini" type="text" inputmode="numeric"> %</label>
+    <label class="chk"><input type="checkbox" id="avBat"> Batería 12 V por debajo de <input id="avBatV" class="mini" type="text" inputmode="decimal"> V</label>
+    <label class="chk"><input type="checkbox" id="avRev"> Revisión oficial a menos de <input id="avRevKm" class="mini" type="text" inputmode="numeric"> km</label>
+    <label class="chk"><input type="checkbox" id="avErr"> Si no puedo leer el coche en unas 12 horas</label>
+  </div>
+  <p class="aj-estado" id="ajUltimoAviso"></p>
+
+  <h3>Repostaje</h3>
+  <div class="ed-grid">
+    <label><span>Depósito (L)</span><input id="ajCap" type="text" inputmode="decimal" autocomplete="off"></label>
+    <label><span>Gasolineras en la lista</span><input id="ajGas" type="text" inputmode="numeric" autocomplete="off"></label>
+  </div>
+  <div class="aj-row"><span>Combustible habitual</span>
+    <div class="toggle" id="ajFuel" role="group" aria-label="Combustible habitual"><button type="button" data-v="5">Diésel</button><button type="button" data-v="6">Diésel+</button></div>
+  </div>
+
+  <h3>App</h3>
+  <div class="aj-row"><span>Al abrir</span>
+    <div class="toggle" id="ajPestana" role="group" aria-label="Pestaña al abrir"><button type="button" data-v="ultima">Última</button><button type="button" data-v="rep">Repostaje</button><button type="button" data-v="car">Mi Giulia</button></div>
+  </div>
+  <div class="aj-row"><span>Tema</span>
+    <div class="toggle" id="ajTema" role="group" aria-label="Tema"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Claro</button><button type="button" data-v="dark">Oscuro</button></div>
+  </div>
+
+  <p class="aj-estado" id="ajMsg"></p>
+  <div class="dlg-actions">
+    <button type="button" id="ajCancel">Cancelar</button>
+    <button type="button" class="primary" id="ajSave">Guardar</button>
+  </div>
 </dialog>
 
 <dialog id="pinDlg">
@@ -620,6 +705,25 @@
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
+  // Ajustes (se guardan en el móvil y en ajustes.json del repositorio privado)
+  const AJ_DEF = {
+    aceite: { proximo_km: null, antelacion_km: 500, intervalo_km: 10000, ultimo: null },
+    avisos: { aceite: true, neumaticos: true, presion_min_bar: 2.0, combustible: false, combustible_pct: 15,
+      bateria: true, bateria_v: 12.0, revision: true, revision_km: 1000, errores: true },
+    repostaje: { gasolineras: 15 },
+    app: { pestana: 'ultima', tema: 'auto' },
+    suscripciones: [], modificado: null
+  };
+  const esObj = x => x && typeof x === 'object' && !Array.isArray(x);
+  const fusion = (a, b) => { const r = { ...a }; for (const k in (b || {})) r[k] = esObj(a[k]) && esObj(b[k]) ? fusion(a[k], b[k]) : b[k]; return r; };
+  let aj = AJ_DEF;
+  try { aj = fusion(AJ_DEF, JSON.parse(store.get('ajustes')) || {}); } catch (e) {}
+  function aplicarTema() {
+    const t = aj.app.tema;
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  }
+  aplicarTema();
+
   const parse = s => {
     if (!s) return NaN;
     return parseFloat(String(s).trim().replace(/\s/g, '').replace(',', '.'));
@@ -803,7 +907,7 @@
     pintarZona(todas);
     const RADIO_MARCA = 150;
     const deMarca = todas.filter(c => coincide(c) && (!marcaFiltro || c.km <= RADIO_MARCA));
-    const cerca = deMarca.filter(c => c.e[fuel]).slice(0, 15);
+    const cerca = deMarca.filter(c => c.e[fuel]).slice(0, Math.max(5, Math.min(50, Math.round(aj.repostaje.gasolineras) || 15)));
     const ul = $('stList'); ul.innerHTML = '';
     if (!cerca.length) {
       $('nearMeta').textContent = marcaFiltro
@@ -1322,7 +1426,8 @@
     abrir: { cmd: 'RDU', txt: 'Abrir', hecho: 'Puertas abiertas', pin: true, aviso: '¿Abrir las puertas del coche?' },
     luces: { cmd: 'ROLIGHTS', txt: 'Luces', hecho: 'Luces encendidas', pin: true },
     localizar: { cmd: 'VF', txt: 'Localizar', hecho: 'Ubicación actualizada', pin: true },
-    estado: { txt: 'Actualizar', hecho: 'Datos actualizados', pin: false }
+    estado: { txt: 'Actualizar', hecho: 'Datos actualizados', pin: false },
+    prueba: { txt: 'Prueba de aviso', hecho: 'Notificación enviada: debería llegarte ahora', pin: false }
   };
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
   const nf = (n, d = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
@@ -1422,6 +1527,14 @@
     const g = el('div', 'car-grid');
     const cb = coche.combustible || {};
     if (coche.km != null) g.append(tarjeta('Kilómetros', nf(coche.km) + ' km'));
+    if (coche.km != null) {
+      const ac = aj.aceite, t = ac.proximo_km
+        ? (() => { const falta = ac.proximo_km - coche.km;
+            return tarjeta('Cambio de aceite', falta > 0 ? 'faltan ' + nf(falta) + ' km' : 'toca ya',
+              falta > 0 ? 'a los ' + nf(ac.proximo_km) + ' km' : 'te has pasado ' + nf(-falta) + ' km', falta <= (ac.antelacion_km || 0)); })()
+        : tarjeta('Cambio de aceite', 'Sin fijar', 'Tócalo para ponerlo');
+      t.classList.add('clic'); t.addEventListener('click', abrirAjustes); g.append(t);
+    }
     if (cb.litros != null || cb.pct != null) {
       const partes = [cb.litros != null ? nf(cb.litros) + ' L' : null, cb.pct != null ? nf(cb.pct) + ' %' : null].filter(Boolean).join(' · ');
       const nota = cb.bajo ? 'En reserva' : cb.litros != null ? 'Caben ' + nf(Math.max(0, cap - cb.litros)) + ' L' : '';
@@ -1435,7 +1548,7 @@
     }
     const bt = coche.bateria || {};
     if (bt.voltios != null) g.append(tarjeta('Batería 12 V', nf(bt.voltios, 1) + ' V', bt.estado ? 'Estado: ' + bt.estado : (bt.voltios >= 13.2 ? 'Cargando (motor en marcha)' : bt.voltios < 12.2 ? 'Baja' : 'Normal'), bt.voltios < 12.2));
-    if (coche.aceite != null) g.append(tarjeta('Aceite', String(coche.aceite) + (typeof coche.aceite === 'number' ? ' %' : '')));
+    if (coche.aceite != null) g.append(tarjeta('Nivel de aceite', String(coche.aceite) + (typeof coche.aceite === 'number' ? ' %' : '')));
     (coche.trips || []).forEach(t => g.append(tarjeta(t.nombre || 'Trip', t.km != null ? nf(t.km) + ' km' : '–', t.l100 ? nf(t.l100, 1) + ' L/100 km' : '')));
     if (g.childElementCount) body.append(g);
 
@@ -1621,6 +1734,187 @@
   if (orden) esperarOrden();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { cargarCoche(); if (orden) esperarOrden(); } });
 
+  // ---- Ajustes ----
+  const AJ_FICHERO = 'ajustes.json', AV_FICHERO = 'avisos-estado.json', CLAVE_FICHERO = 'avisos-clave.json';
+  let avisosEstado = null, ajAceiteUltimo = null;
+  const ajNum = (id, def) => { const v = parse($(id).value); return isNaN(v) ? def : v; };
+  const setToggle = (id, v) => document.querySelectorAll('#' + id + ' button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v)));
+  const getToggle = id => { const b = document.querySelector('#' + id + ' button.on'); return b ? b.dataset.v : null; };
+  ['ajFuel', 'ajPestana', 'ajTema'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (b) setToggle(id, b.dataset.v); }));
+
+  function guardarAjLocal() { store.set('ajustes', JSON.stringify(aj)); }
+
+  function pintarEstadoAceite() {
+    const km = coche && coche.km, obj = parse($('ajAceiteKm').value);
+    const partes = [];
+    if (km != null) partes.push('El coche marca <b>' + nf(km) + ' km</b>');
+    if (km != null && obj > 0) partes.push(obj > km ? 'faltan <b>' + nf(obj - km) + ' km</b>' : 'te has pasado <b>' + nf(km - obj) + ' km</b>');
+    const u = ajAceiteUltimo || aj.aceite.ultimo;
+    if (u && u.km) partes.push('último cambio a los ' + nf(u.km) + ' km' + (u.fecha ? ' (' + new Date(u.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) + ')' : ''));
+    $('ajAceiteEstado').innerHTML = partes.length ? partes.join(', ') + '.' : 'Pon a cuántos km quieres el próximo cambio.';
+  }
+
+  function abrirAjustes() {
+    const a = aj;
+    ajAceiteUltimo = null;
+    $('ajAceiteKm').value = a.aceite.proximo_km ? String(Math.round(a.aceite.proximo_km)) : '';
+    $('ajAceiteAntes').value = String(a.aceite.antelacion_km ?? 500);
+    $('ajAceiteInt').value = String(a.aceite.intervalo_km ?? 10000);
+    $('avAceite').checked = !!a.avisos.aceite;
+    $('avNeum').checked = !!a.avisos.neumaticos; $('avNeumBar').value = fmt(a.avisos.presion_min_bar ?? 2, 1);
+    $('avComb').checked = !!a.avisos.combustible; $('avCombPct').value = String(a.avisos.combustible_pct ?? 15);
+    $('avBat').checked = !!a.avisos.bateria; $('avBatV').value = fmt(a.avisos.bateria_v ?? 12, 1);
+    $('avRev').checked = !!a.avisos.revision; $('avRevKm').value = String(a.avisos.revision_km ?? 1000);
+    $('avErr').checked = !!a.avisos.errores;
+    $('ajCap').value = fmt(cap, cap % 1 ? 1 : 0);
+    $('ajGas').value = String(a.repostaje.gasolineras || 15);
+    setToggle('ajFuel', fuel); setToggle('ajPestana', a.app.pestana); setToggle('ajTema', a.app.tema);
+    $('ajMsg').textContent = '';
+    pintarEstadoAceite(); pintarUltimoAviso(); pintarPush();
+    $('ajDlg').showModal();
+    if (cfg()) cargarAjustesRemotos().then(() => { pintarUltimoAviso(); pintarPush(); });
+  }
+  $('ajBtn').addEventListener('click', abrirAjustes);
+  $('ajCancel').addEventListener('click', () => $('ajDlg').close());
+  $('ajAceiteKm').addEventListener('input', pintarEstadoAceite);
+  $('ajAceiteHecho').addEventListener('click', () => {
+    const sugerido = coche && coche.km != null ? String(Math.round(coche.km)) : '';
+    const r = prompt('¿A cuántos km lo has cambiado?', sugerido);
+    if (r === null) return;
+    const km = parseInt(String(r).replace(/\D/g, ''), 10);
+    if (!(km > 0)) return;
+    const intervalo = ajNum('ajAceiteInt', 10000);
+    ajAceiteUltimo = { km, fecha: new Date().toISOString() };
+    $('ajAceiteKm').value = String(km + intervalo);
+    pintarEstadoAceite();
+    $('ajMsg').textContent = 'Próximo cambio a los ' + nf(km + intervalo) + ' km. Pulsa Guardar.';
+  });
+
+  $('ajSave').addEventListener('click', async () => {
+    const obj = parseInt($('ajAceiteKm').value.replace(/\D/g, ''), 10);
+    const n = JSON.parse(JSON.stringify(aj));
+    n.aceite.proximo_km = obj > 0 ? obj : null;
+    n.aceite.antelacion_km = Math.max(0, Math.round(ajNum('ajAceiteAntes', 500)));
+    n.aceite.intervalo_km = Math.max(1000, Math.round(ajNum('ajAceiteInt', 10000)));
+    if (ajAceiteUltimo) n.aceite.ultimo = ajAceiteUltimo;
+    n.avisos = {
+      aceite: $('avAceite').checked,
+      neumaticos: $('avNeum').checked, presion_min_bar: Math.max(0, ajNum('avNeumBar', 2)),
+      combustible: $('avComb').checked, combustible_pct: Math.max(1, Math.min(99, Math.round(ajNum('avCombPct', 15)))),
+      bateria: $('avBat').checked, bateria_v: Math.max(9, Math.min(14, ajNum('avBatV', 12))),
+      revision: $('avRev').checked, revision_km: Math.max(0, Math.round(ajNum('avRevKm', 1000))),
+      errores: $('avErr').checked
+    };
+    n.repostaje.gasolineras = Math.max(5, Math.min(50, Math.round(ajNum('ajGas', 15))));
+    n.app.pestana = getToggle('ajPestana') || 'ultima';
+    n.app.tema = getToggle('ajTema') || 'auto';
+    n.modificado = new Date().toISOString();
+    const nc = ajNum('ajCap', cap);
+    if (nc > 0 && nc < 200) { cap = nc; store.set('cap', String(nc)); }
+    const f = Number(getToggle('ajFuel')) || fuel;
+    setFuel(f); setSaveFuel(f);
+    aj = n; guardarAjLocal(); aplicarTema();
+    render(); pintarCoche(); if (datos && pos) pintar();
+    if (cfg()) {
+      $('ajMsg').textContent = 'Guardando en GitHub…';
+      const r = await subirAjustes();
+      if (!r.ok) { $('ajMsg').textContent = 'Guardado en el móvil, pero no en GitHub: ' + r.msg + ' Los avisos usarán los ajustes anteriores hasta que se suba.'; return; }
+    }
+    $('ajDlg').close();
+  });
+
+  // Ajustes en el repositorio: el proceso de GitHub los usa para decidir qué avisar
+  async function subirAjustes(cambio = {}) {
+    const c = cfg(); if (!c) return { ok: false, msg: 'Falta conectar la copia en GitHub.' };
+    try {
+      for (let intento = 0; intento < 3; intento++) {
+        let remoto = {}, sha;
+        const r = await gh(c, '/contents/' + AJ_FICHERO);
+        if (r.ok) { const j = await r.json(); sha = j.sha; try { remoto = JSON.parse(deBase64(j.content)); } catch (e) {} }
+        else if (r.status !== 404) return { ok: false, msg: errorTexto(r.status) };
+        const caducadas = new Set((avisosEstado && avisosEstado.caducadas) || []);
+        let subs = (remoto.suscripciones || []).filter(x => x && x.endpoint && !caducadas.has(x.endpoint) && x.endpoint !== cambio.quitar && (!cambio.poner || x.endpoint !== cambio.poner.endpoint));
+        if (cambio.poner) subs.push(cambio.poner);
+        const nuevo = { ...aj, suscripciones: subs };
+        const put = await gh(c, '/contents/' + AJ_FICHERO, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Ajustes', content: aBase64(JSON.stringify(nuevo, null, 1)), ...(sha ? { sha } : {}) })
+        });
+        if (put.ok) { aj.suscripciones = subs; guardarAjLocal(); return { ok: true }; }
+        if (put.status !== 409 && put.status !== 422) return { ok: false, msg: errorTexto(put.status) };
+      }
+      return { ok: false, msg: 'GitHub no ha aceptado el cambio; inténtalo de nuevo.' };
+    } catch (e) { return { ok: false, msg: 'Sin conexión con GitHub.' }; }
+  }
+
+  async function cargarAjustesRemotos() {
+    try {
+      const [a, b] = await Promise.all([leerRepo(AJ_FICHERO), leerRepo(AV_FICHERO).catch(() => ({}))]);
+      if (b && b.datos) avisosEstado = b.datos;
+      if (a.datos) {
+        const remoto = a.datos;
+        if (!aj.modificado || (remoto.modificado && remoto.modificado > aj.modificado)) {
+          aj = fusion(AJ_DEF, remoto); guardarAjLocal(); aplicarTema(); pintarCoche();
+        } else aj.suscripciones = remoto.suscripciones || [];
+      }
+    } catch (e) {}
+  }
+
+  function pintarUltimoAviso() {
+    const u = avisosEstado && avisosEstado.ultimo_envio;
+    $('ajUltimoAviso').textContent = u ? 'Último aviso, ' + cuando(u.hora) + ': ' + (u.avisos || []).join(' · ') + ' — ' + u.resultado : '';
+  }
+
+  // Suscripción a las notificaciones en este móvil
+  const b64aBytes = b => { const s = atob((b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, ch => ch.charCodeAt(0)); };
+  const bytesAb64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const pushPosible = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  async function miSuscripcion() {
+    if (!pushPosible()) return null;
+    try { const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('sin sw')), 4000))]); return await reg.pushManager.getSubscription(); } catch (e) { return null; }
+  }
+  async function pintarPush() {
+    const est = $('ajPushEstado'), on = $('ajPushOn'), test = $('ajPushTest');
+    test.disabled = !cfg();
+    if (!pushPosible()) { est.textContent = 'Este navegador no admite notificaciones. Usa la app instalada desde Chrome.'; on.disabled = true; return; }
+    if (Notification.permission === 'denied') { est.textContent = 'Las notificaciones están bloqueadas para esta app en los ajustes del móvil.'; on.disabled = true; return; }
+    on.disabled = !cfg();
+    const sub = await miSuscripcion();
+    const apuntado = sub && (aj.suscripciones || []).some(x => x.endpoint === sub.endpoint);
+    est.innerHTML = !cfg() ? 'Conecta antes la copia en GitHub.' : apuntado ? '<b>Activadas en este móvil.</b>' : 'Desactivadas en este móvil.';
+    on.textContent = apuntado ? 'Desactivar en este móvil' : 'Activar en este móvil';
+    on.dataset.on = apuntado ? '1' : '';
+  }
+  $('ajPushOn').addEventListener('click', async () => {
+    const msg = $('ajMsg');
+    if ($('ajPushOn').dataset.on) {
+      const sub = await miSuscripcion();
+      msg.textContent = 'Desactivando…';
+      const r = await subirAjustes({ quitar: sub && sub.endpoint });
+      if (sub) try { await sub.unsubscribe(); } catch (e) {}
+      msg.textContent = r.ok ? 'Notificaciones desactivadas en este móvil.' : r.msg;
+      pintarPush(); return;
+    }
+    msg.textContent = 'Preparando…';
+    let clave;
+    try { clave = await leerRepo(CLAVE_FICHERO); } catch (e) { msg.textContent = 'No he podido leer la clave de avisos de GitHub.'; return; }
+    if (!clave.datos || !clave.datos.publica) { msg.textContent = 'Aún no hay claves de avisos: sigue los pasos de la Ayuda («Ajustes y notificaciones») y pulsa Actualizar en Mi Giulia.'; return; }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { msg.textContent = 'Sin permiso para notificaciones.'; pintarPush(); return; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && sub.options && sub.options.applicationServerKey && bytesAb64(sub.options.applicationServerKey) !== clave.datos.publica) { await sub.unsubscribe(); sub = null; }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64aBytes(clave.datos.publica) });
+      const j = sub.toJSON();
+      const r = await subirAjustes({ poner: { endpoint: j.endpoint, keys: j.keys, alta: new Date().toISOString(), equipo: (navigator.userAgentData && navigator.userAgentData.platform) || 'móvil' } });
+      msg.textContent = r.ok ? 'Notificaciones activadas. Pulsa «Probar» para comprobarlo.' : r.msg;
+    } catch (e) { msg.textContent = 'No he podido activar las notificaciones: ' + (e && e.message || e); }
+    pintarPush();
+  });
+  $('ajPushTest').addEventListener('click', () => { $('ajDlg').close(); vista('car'); enviarOrden('prueba'); });
+  if (cfg()) cargarAjustesRemotos();
+
   // ---- Pestañas: Repostaje / Mi Giulia ----
   function vista(v, sinScroll) {
     v = v === 'car' ? 'car' : 'rep';
@@ -1637,7 +1931,7 @@
   }
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
   const hashVista = { giulia: 'car', coche: 'car', repostaje: 'rep' }[location.hash.slice(1)];
-  vista(hashVista || store.get('vista') || 'rep', true);
+  vista(hashVista || (aj.app.pestana === 'ultima' ? store.get('vista') : aj.app.pestana) || 'rep', true);
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
