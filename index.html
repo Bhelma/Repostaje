@@ -288,6 +288,10 @@
   .res.clic { cursor: pointer; }
   .help-btn svg { width: 20px; height: 20px; display: block; margin: auto; }
 
+  .vig-estado { font-weight: 700; font-size: .95rem; padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+  .vig-estado.on { background: var(--red); color: #fff; }
+  #vigBtn.on { background: none; color: var(--red); border: 2px solid var(--red); }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 6px;
@@ -464,6 +468,11 @@
       <div id="carTop"></div>
     </section>
     <div id="carMid"></div>
+    <section class="near" id="vigPanel">
+      <div class="near-head"><h2>Vigilancia</h2><span class="vig-estado" id="vigEstado">Apagada</span></div>
+      <p class="near-meta" id="vigTxt"></p>
+      <button type="button" class="near-btn" id="vigBtn">Activar vigilancia</button>
+    </section>
     <section class="near">
       <div class="near-head"><h2>Mando a distancia</h2></div>
       <div class="car-btns" id="carBtns"></div>
@@ -613,6 +622,21 @@
     <p class="tip">Funciona con la app instalada desde Chrome. Si el móvil tiene ahorro de batería agresivo para Chrome, las notificaciones pueden llegar con retraso.</p>
   </details>
   <details>
+    <summary>Vigilancia y widget en la pantalla de inicio</summary>
+    <p>Con la <b>vigilancia</b> activada, el proceso de GitHub lee el coche cada hora y te manda una notificación si aparece aparcado fuera del radio (300 m por defecto, se cambia en Ajustes). El coche manda su posición al apagarlo, así que el aviso llega cuando lo dejan parado en otro sitio, no mientras se mueve.</p>
+    <p><b>Acceso rápido sin widget:</b> mantén pulsado el icono de Mi Giulia → verás «Vigilar» y «No vigilar». Puedes arrastrarlos a la pantalla de inicio como iconos sueltos.</p>
+    <p><b>Widget de un toque</b> (no abre la app), con la app gratuita <b>HTTP Shortcuts</b> de Google Play:</p>
+    <ol>
+      <li>En GitHub crea una clave nueva solo para esto: <b>Fine-grained token</b>, repositorio <code>repostaje-datos</code>, permiso <b>Actions: Read and write</b> y nada más.</li>
+      <li>En HTTP Shortcuts, crea un acceso <b>Vigilar</b>: método <b>POST</b>, URL <code>https://api.github.com/repos/Bhelma/repostaje-datos/actions/workflows/coche.yml/dispatches</code>.</li>
+      <li>Cabeceras: <code>Authorization</code> = <code>Bearer</code> + espacio + tu clave, y <code>Accept</code> = <code>application/vnd.github+json</code>.</li>
+      <li>Cuerpo (JSON): <code>{"ref":"main","inputs":{"accion":"vigilar_on"}}</code>.</li>
+      <li>Duplícalo como <b>No vigilar</b> cambiando <code>vigilar_on</code> por <code>vigilar_off</code>.</li>
+      <li>Añade los dos a la pantalla de inicio (mantén pulsado el escritorio → Widgets → HTTP Shortcuts).</li>
+    </ol>
+    <p class="tip">Al pulsarlo, en un minuto o dos te llega una notificación confirmando que se ha activado o desactivado.</p>
+  </details>
+  <details>
     <summary>Copias en Excel y de seguridad</summary>
     <ul>
       <li><b>Exportar a Excel (CSV)</b>: descarga todos tus repostajes en la carpeta Descargas.</li>
@@ -651,6 +675,9 @@
     <label class="chk"><input type="checkbox" id="avBat"> Batería 12 V por debajo de <input id="avBatV" class="mini" type="text" inputmode="decimal"> V</label>
     <label class="chk"><input type="checkbox" id="avRev"> Revisión oficial a menos de <input id="avRevKm" class="mini" type="text" inputmode="numeric"> km</label>
     <label class="chk"><input type="checkbox" id="avErr"> Si no puedo leer el coche en unas 12 horas</label>
+  </div>
+  <div class="ed-grid" style="margin-top:12px">
+    <label class="full"><span>Radio de la vigilancia (metros)</span><input id="ajVigRadio" type="text" inputmode="numeric" autocomplete="off"></label>
   </div>
   <p class="aj-estado" id="ajUltimoAviso"></p>
 
@@ -712,6 +739,7 @@
       bateria: true, bateria_v: 12.0, revision: true, revision_km: 1000, errores: true },
     repostaje: { gasolineras: 15 },
     app: { pestana: 'ultima', tema: 'auto' },
+    vigilancia: { activa: false, radio_m: 300, centro: null, desde: null },
     suscripciones: [], modificado: null
   };
   const esObj = x => x && typeof x === 'object' && !Array.isArray(x);
@@ -1514,7 +1542,7 @@
   function pintarCoche() {
     const body = $('carTop'), mid = $('carMid'), bot = $('carBottom'), meta = $('carMeta');
     body.innerHTML = ''; mid.innerHTML = ''; bot.innerHTML = '';
-    pintarUsarCoche(); pintarBotones();
+    pintarUsarCoche(); pintarBotones(); if (typeof pintarVigilancia === 'function') try { pintarVigilancia(); } catch (e) {}
     if (!cfg()) { meta.textContent = 'Conecta la copia en GitHub (pestaña Repostaje, al final de «Mis repostajes») para ver aquí los datos del coche.'; return; }
     if (!coche) {
       meta.textContent = cocheMsg === 'falta' ? 'Aún no hay datos del coche. Pulsa «Actualizar» (tarda 1-2 minutos).' : (cocheMsg || 'Cargando los datos del coche…');
@@ -1766,6 +1794,7 @@
     $('avBat').checked = !!a.avisos.bateria; $('avBatV').value = fmt(a.avisos.bateria_v ?? 12, 1);
     $('avRev').checked = !!a.avisos.revision; $('avRevKm').value = String(a.avisos.revision_km ?? 1000);
     $('avErr').checked = !!a.avisos.errores;
+    $('ajVigRadio').value = String(a.vigilancia.radio_m || 300);
     $('ajCap').value = fmt(cap, cap % 1 ? 1 : 0);
     $('ajGas').value = String(a.repostaje.gasolineras || 15);
     setToggle('ajFuel', fuel); setToggle('ajPestana', a.app.pestana); setToggle('ajTema', a.app.tema);
@@ -1805,6 +1834,7 @@
       revision: $('avRev').checked, revision_km: Math.max(0, Math.round(ajNum('avRevKm', 1000))),
       errores: $('avErr').checked
     };
+    n.vigilancia.radio_m = Math.max(100, Math.min(20000, Math.round(ajNum('ajVigRadio', 300))));
     n.repostaje.gasolineras = Math.max(5, Math.min(50, Math.round(ajNum('ajGas', 15))));
     n.app.pestana = getToggle('ajPestana') || 'ultima';
     n.app.tema = getToggle('ajTema') || 'auto';
@@ -1914,6 +1944,52 @@
   });
   $('ajPushTest').addEventListener('click', () => { $('ajDlg').close(); vista('car'); enviarOrden('prueba'); });
   if (cfg()) cargarAjustesRemotos();
+
+  // ---- Vigilancia ----
+  function distM(a, b) {
+    const r = Math.PI / 180, x = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+    return 2 * 6371000 * Math.asin(Math.sqrt(x));
+  }
+  const metros = d => d >= 1000 ? nf(d / 1000, 1) + ' km' : nf(Math.round(d)) + ' m';
+  function pintarVigilancia(msg) {
+    const vg = aj.vigilancia || {}, on = !!vg.activa, radio = vg.radio_m || 300;
+    $('vigEstado').textContent = on ? 'Activa' : 'Apagada';
+    $('vigEstado').classList.toggle('on', on);
+    const b = $('vigBtn');
+    b.textContent = on ? 'Desactivar vigilancia' : 'Activar vigilancia';
+    b.classList.toggle('on', on);
+    b.disabled = !cfg();
+    let t;
+    if (on && vg.centro) {
+      t = 'Activa ' + cuando(vg.desde).replace(/^/, 'desde ') + '. Te aviso si el coche aparece a más de ' + metros(radio) + ' de donde estaba.';
+      const u = coche && coche.ubicacion;
+      if (u && u.lat != null) t += ' Ahora está a ' + metros(distM(vg.centro, u)) + ' (posición ' + cuando(u.hora).replace(/ \(.*\)$/, '') + ').';
+    } else t = 'Actívala al dejar el coche: si aparece aparcado a más de ' + metros(radio) + ' de ahí, te llega una notificación.';
+    $('vigTxt').textContent = msg ? msg + ' ' + t : t;
+  }
+  async function ponerVigilancia(activar) {
+    if (!cfg()) { pintarVigilancia('Conecta antes la copia en GitHub.'); return; }
+    $('vigBtn').disabled = true;
+    pintarVigilancia('Guardando…');
+    await cargarAjustesRemotos();
+    const u = coche && coche.ubicacion;
+    if (activar && !(u && u.lat != null)) { pintarVigilancia('Aún no tengo la posición del coche: pulsa Actualizar en Estado.'); return; }
+    const vg = { ...(aj.vigilancia || {}) };
+    if (activar) Object.assign(vg, { activa: true, desde: new Date().toISOString(), centro: { lat: u.lat, lon: u.lon, hora: u.hora } });
+    else vg.activa = false;
+    aj.vigilancia = vg; aj.modificado = new Date().toISOString(); guardarAjLocal();
+    const r = await subirAjustes();
+    pintarVigilancia(r.ok ? (activar ? 'Vigilancia activada.' : 'Vigilancia desactivada.') : 'No se ha podido guardar en GitHub: ' + r.msg);
+  }
+  $('vigBtn').addEventListener('click', () => ponerVigilancia(!(aj.vigilancia && aj.vigilancia.activa)));
+  pintarVigilancia();
+  // Accesos directos del icono: ?vigilancia=1 / ?vigilancia=0
+  const pv = new URLSearchParams(location.search).get('vigilancia');
+  if (pv === '1' || pv === '0') {
+    history.replaceState(null, '', location.pathname + '#giulia');
+    vista('car', true);
+    cargarCoche(true).then(() => ponerVigilancia(pv === '1'));
+  }
 
   // ---- Pestañas: Repostaje / Mi Giulia ----
   function vista(v, sinScroll) {

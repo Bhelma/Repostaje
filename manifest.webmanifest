@@ -27,5 +27,32 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Activar vigilancia",
+      "short_name": "Vigilar",
+      "description": "Avisa si el Giulia aparece fuera del radio",
+      "url": "./?vigilancia=1#giulia",
+      "icons": [
+        {
+          "src": "icons/vigilar-on-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Desactivar vigilancia",
+      "short_name": "No vigilar",
+      "url": "./?vigilancia=0#giulia",
+      "icons": [
+        {
+          "src": "icons/vigilar-off-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
