@@ -85,6 +85,7 @@ def main():
                 num(e.get("Precio Gasoleo Premium")),
                 num(e.get("Precio Gasolina 95 E5")),
                 (e.get("Horario") or "").strip(),
+                (e.get("IDProvincia") or "").strip(),
             ])
     if not estaciones:
         raise SystemExit("La respuesta no trae estaciones; no se sobrescribe el fichero")
@@ -93,7 +94,7 @@ def main():
         json.dump({
             "fecha": fecha,
             "campos": ["rotulo", "direccion", "localidad", "lat", "lon",
-                       "gasoleoA", "gasoleoPremium", "gasolina95", "horario"],
+                       "gasoleoA", "gasoleoPremium", "gasolina95", "horario", "provincia"],
             "estaciones": estaciones,
         }, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{len(estaciones)} estaciones, datos del {fecha}")
