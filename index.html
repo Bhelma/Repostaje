@@ -1904,7 +1904,7 @@
   async function cargarAjustesRemotos() {
     try {
       const [a, b] = await Promise.all([leerRepo(AJ_FICHERO), leerRepo(AV_FICHERO).catch(() => ({}))]);
-      if (b && b.datos) avisosEstado = b.datos;
+      if (b && b.datos) { avisosEstado = b.datos; try { pintarVigilancia(); } catch (e) {} }
       if (a.datos) {
         const remoto = a.datos;
         if (!aj.modificado || (remoto.modificado && remoto.modificado > aj.modificado)) {
@@ -1983,13 +1983,19 @@
     b.textContent = on ? 'Desactivar vigilancia' : 'Activar vigilancia';
     b.classList.toggle('on', on);
     b.disabled = !cfg();
-    let t;
+    let t, fuera = false;
     if (on && vg.centro) {
       t = 'Activa ' + cuando(vg.desde).replace(/^/, 'desde ') + '. Te aviso si el coche aparece a más de ' + metros(radio) + ' de donde estaba.';
       const u = coche && coche.ubicacion;
-      if (u && u.lat != null) t += ' Ahora está a ' + metros(distM(vg.centro, u)) + ' (posición ' + cuando(u.hora).replace(/ \(.*\)$/, '') + ').';
+      if (u && u.lat != null) {
+        const dd = distM(vg.centro, u); fuera = dd > radio;
+        t = (fuera ? '⚠ ¡Fuera del radio! ' : '') + t + ' Ahora está a ' + metros(dd) + ' (posición ' + cuando(u.hora).replace(/ \(.*\)$/, '') + ').';
+      }
     } else t = 'Actívala al dejar el coche: si aparece aparcado a más de ' + metros(radio) + ' de ahí, te llega una notificación.';
+    const ue = avisosEstado && avisosEstado.ultimo_envio;
+    if (ue) t += ' Último aviso enviado ' + cuando(ue.hora).replace(/ \(.*\)$/, '') + ': ' + ue.resultado;
     $('vigTxt').textContent = msg ? msg + ' ' + t : t;
+    $('vigTxt').className = 'near-meta' + (fuera ? ' car-warn' : '');
   }
   async function ponerVigilancia(activar) {
     if (!cfg()) { pintarVigilancia('Conecta antes la copia en GitHub.'); return; }
@@ -2003,7 +2009,21 @@
     else vg.activa = false;
     aj.vigilancia = vg; aj.modificado = new Date().toISOString(); guardarAjLocal();
     const r = await subirAjustes();
+    if (r.ok) notifVigilancia(activar, vg.radio_m || 300);
     pintarVigilancia(r.ok ? (activar ? 'Vigilancia activada.' : 'Vigilancia desactivada.') : 'No se ha podido guardar en GitHub: ' + r.msg);
+  }
+  // Notificación fija mientras la vigilancia está activa (escudo rojo); se quita al desactivarla
+  async function notifVigilancia(on, radio) {
+    try {
+      if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const reg = await navigator.serviceWorker.ready;
+      (await reg.getNotifications({ tag: 'vigilancia-estado' })).forEach(n => n.close());
+      if (on) await reg.showNotification('Vigilancia activa', {
+        body: 'Te aviso si el Giulia aparece a más de ' + metros(radio) + ' de donde lo has dejado.',
+        tag: 'vigilancia-estado', icon: 'icons/vigilancia-192.png', badge: 'icons/badge-escudo-96.png',
+        requireInteraction: true, silent: true, data: { url: './#giulia' }
+      });
+    } catch (e) {}
   }
   $('vigBtn').addEventListener('click', () => ponerVigilancia(!(aj.vigilancia && aj.vigilancia.activa)));
   pintarVigilancia();
