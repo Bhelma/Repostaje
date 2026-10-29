@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#E9ECEF">
+<meta name="theme-color" content="#E6E8EB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1215" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -14,15 +15,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #E9ECEF;
+    --bg: #E6E8EB;
     --panel: #FFFFFF;
-    --ink: #1C2228;
-    --muted: #5E6973;
-    --line: #CDD3D9;
-    --red: #B3121C;
-    --red-soft: rgba(179,18,28,.14);
-    --fuel-old: #8C969F;
-    --warn: #8A5A00;
+    --ink: #14171B;
+    --muted: #5E666F;
+    --line: #D6DADF;
+    --red: #B8141E;
+    --red-soft: rgba(184,20,30,.10);
+    --fuel-old: #9AA2AB;
+    --warn: #A15C00;
+    --hero-top: #F7F8F9;
+    --hero-bot: #CED3D9;
+    --suelo: rgba(20,23,27,.42);
     color-scheme: light;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
@@ -30,21 +34,25 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #15191D;
-      --panel: #1F252B;
-      --ink: #EEF1F3;
-      --muted: #9AA5AF;
-      --line: #343C44;
-      --red: #E2323C;
-      --red-soft: rgba(226,50,60,.18);
-      --fuel-old: #5B656E;
-      --warn: #E6B450;
+      --bg: #0F1215;
+      --panel: #191D22;
+      --ink: #ECEEF1;
+      --muted: #929AA4;
+      --line: #2A3038;
+      --red: #E3262F;
+      --red-soft: rgba(227,38,47,.16);
+      --fuel-old: #4B535C;
+      --warn: #F0B04A;
+      --hero-top: #2C3239;
+      --hero-bot: #0F1215;
+      --suelo: rgba(0,0,0,.75);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #15191D; --panel: #1F252B; --ink: #EEF1F3; --muted: #9AA5AF; --line: #343C44;
-    --red: #E2323C; --red-soft: rgba(226,50,60,.18); --fuel-old: #5B656E; --warn: #E6B450;
+    --bg: #0F1215; --panel: #191D22; --ink: #ECEEF1; --muted: #929AA4; --line: #2A3038;
+    --red: #E3262F; --red-soft: rgba(227,38,47,.16); --fuel-old: #4B535C; --warn: #F0B04A;
+    --hero-top: #2C3239; --hero-bot: #0F1215; --suelo: rgba(0,0,0,.75);
     color-scheme: dark;
   }
   *, *::before, *::after { box-sizing: inherit; }
@@ -240,17 +248,19 @@
   .tyres { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 6px 10px; align-items: center; margin-top: 10px; background: var(--bg); border-radius: 14px; padding: 12px 8px; }
   .tyres .carro { grid-column: 2; grid-row: 1 / span 2; }
   .tyres .carro svg { display: block; width: 96px; height: auto; }
-  .carro-svg .cuerpo { fill: var(--red); }
+  .carro-svg .cuerpo { fill: #6A6F76; }
   .carro-svg .w { fill: #2A2F35; }
   .carro-svg .w.bad { fill: var(--warn); }
   .carro-svg .cristal { fill: rgba(20,24,28,.82); }
   .carro-svg .linea { fill: none; stroke: rgba(0,0,0,.16); stroke-width: 1.6; }
   .carro-svg .techo { fill: rgba(0,0,0,.12); }
-  .carro-svg .faro { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .85; }
+  .carro-svg .faro { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .9; }
+  .carro-svg .w { fill: #1E2226; }
   .carro-svg .piloto { fill: none; stroke: rgba(0,0,0,.4); stroke-width: 3; stroke-linecap: round; }
   .tyre { text-align: center; }
   .tyre b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
   .tyre span { color: var(--muted); font-size: .85rem; }
+  .tyre b small { font-size: .8rem; font-weight: 600; color: var(--muted); }
   .tyre.bad b, .tyre.bad span { color: var(--warn); }
   .map { display: block; width: 100%; height: 210px; border: 0; border-radius: 12px; margin-top: 10px; background: var(--bg); }
   .car-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
@@ -292,10 +302,63 @@
   .vig-estado.on { background: var(--red); color: #fff; }
   #vigBtn.on { background: none; color: var(--red); border: 2px solid var(--red); }
 
+  /* ===== Estética Mi Giulia ===== */
+  .near, .gauge, .res { border: 1px solid var(--line); }
+  .near { border-radius: 22px; padding: 16px 14px; }
+  .near-head h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: .005em; }
+  .car-grid .res { border: 0; border-radius: 14px; }
+
+  /* Cabecera con la foto del coche */
+  .hero { position: relative; margin: 0 -16px; padding: 6px 16px 18px; overflow: hidden;
+    background: linear-gradient(to bottom, transparent 62%, var(--bg) 100%), radial-gradient(120% 75% at 50% 18%, var(--hero-top) 0%, var(--hero-bot) 100%); }
+  .hero-foto { position: relative; margin: 4px -6px 0; }
+  .hero-foto::after { content: ""; position: absolute; left: 6%; right: 4%; bottom: 2%; height: 11%;
+    background: radial-gradient(50% 50% at 50% 50%, var(--suelo) 0%, transparent 70%); z-index: 0; }
+  .hero-foto img { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
+  .hero-datos { display: grid; grid-template-columns: 1.3fr .85fr 1.1fr; margin-top: 8px; }
+  .hero-datos > div { padding: 2px 10px; border-left: 1px solid var(--line); }
+  .hero-datos > div:first-child { border-left: 0; padding-left: 0; }
+  .hero-datos span { display: block; color: var(--muted); font-size: .88rem; }
+  .hero-datos strong { display: block; font-size: clamp(1.1rem, 5.4vw, 1.45rem); font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hero-datos strong.alerta { color: var(--warn); }
+  .hero-meta { margin: 10px 0 0; color: var(--muted); font-size: .92rem; }
+  #vCar > .hero + .near { margin-top: 14px; }
+
+  /* Depósito como reloj del cuadro */
+  .dial { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; margin-top: 10px; }
+  .dial svg { width: 150px; height: auto; display: block; }
+  .dial .pista { fill: none; stroke: var(--line); stroke-width: 11; stroke-linecap: round; }
+  .dial .nivel { fill: none; stroke: var(--red); stroke-width: 11; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+  .dial.bajo .nivel { stroke: var(--warn); }
+  .dial .rayas line { stroke: var(--muted); stroke-width: 1.6; opacity: .55; }
+  .dial .pct { font: 700 30px "Barlow Semi Condensed", sans-serif; fill: var(--ink); }
+  .dial .pct-u { font: 600 15px "Barlow Semi Condensed", sans-serif; fill: var(--muted); }
+  .dial .ef { font: 600 12px "Barlow Semi Condensed", sans-serif; fill: var(--muted); }
+  .dial-txt strong { display: block; font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .dial-txt span { display: block; color: var(--muted); margin-top: 4px; }
+  @media (prefers-reduced-motion: reduce) { .dial .nivel { transition: none; } }
+
+  /* Mapa con Mapa / Satélite */
+  .mapa-box { position: relative; margin-top: 10px; }
+  .mapa-box .map { margin-top: 0; height: 240px; }
+  .mapa-tipo { position: absolute; top: 8px; right: 8px; display: flex; background: var(--panel); border-radius: 10px; padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  .mapa-tipo button { font: inherit; font-weight: 700; font-size: .9rem; border: 0; background: none; color: var(--muted); padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+  .mapa-tipo button.on { background: var(--red); color: #fff; }
+
+  /* Mando a distancia: botones redondos */
+  .car-btns { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+  .car-btns button { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 0; color: var(--ink); font-weight: 600; font-size: .95rem; }
+  .car-btns button .redondo { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); border: 1px solid var(--line); color: var(--red); }
+  .car-btns button .redondo svg { width: 28px; height: 28px; }
+  .car-btns button:active { background: none; color: var(--ink); }
+  .car-btns button:active .redondo { background: var(--red); color: #fff; border-color: var(--red); }
+  .car-btns button:disabled { opacity: .4; color: var(--ink); background: none; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 6px;
-    background: var(--panel); border-top: 1px solid var(--line); padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); }
+    background: color-mix(in srgb, var(--panel) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); }
   .tabs button { flex: 1; max-width: 220px; display: flex; flex-direction: column; align-items: center; gap: 2px; font: inherit; font-weight: 600; font-size: .92rem;
     background: none; border: 0; color: var(--muted); padding: 6px 0 4px; border-radius: 12px; cursor: pointer; }
   .tabs button svg { width: 26px; height: 26px; }
@@ -459,6 +522,15 @@
   </div>
 
   <div id="vCar" hidden>
+    <section class="hero" aria-label="Resumen del coche">
+      <div class="hero-foto"><img src="icons/giulia.webp" alt="Tu Alfa Romeo Giulia gris" width="1000" height="539" decoding="async"></div>
+      <div class="hero-datos">
+        <div><span>Odómetro</span><strong id="hKm">–</strong></div>
+        <div><span>Depósito</span><strong id="hFuel">–</strong></div>
+        <div><span>Aceite en</span><strong id="hAceite">–</strong></div>
+      </div>
+      <p class="hero-meta" id="hMeta"></p>
+    </section>
     <section class="near">
       <div class="near-head">
         <h2>Estado</h2>
@@ -1539,6 +1611,46 @@
       '<path class="piloto" d="M18 203Q25 211 36 212M82 203Q75 211 64 212"/></svg>';
   }
 
+  // Cabecera: km, depósito y cambio de aceite debajo de la foto
+  function pintarHero() {
+    const c = coche || {}, cb = c.combustible || {}, ac = aj.aceite;
+    $('hKm').textContent = c.km != null ? nf(c.km) + ' km' : '–';
+    $('hFuel').textContent = cb.pct != null ? nf(cb.pct) + ' %' : cb.litros != null ? nf(cb.litros) + ' L' : '–';
+    $('hFuel').classList.toggle('alerta', !!cb.bajo);
+    const h = $('hAceite');
+    if (c.km != null && ac.proximo_km) {
+      const falta = ac.proximo_km - c.km;
+      h.textContent = falta > 0 ? nf(falta) + ' km' : 'ya';
+      h.classList.toggle('alerta', falta <= (ac.antelacion_km || 0));
+    } else { h.textContent = 'fijar'; h.classList.remove('alerta'); }
+    h.parentElement.classList.add('clic'); h.parentElement.onclick = abrirAjustes;
+    $('hMeta').textContent = c.dato ? 'Último dato del coche ' + cuando(c.dato) + '.' : '';
+  }
+  // Depósito como reloj: arco de 240° con la aguja en el nivel
+  function dialDeposito(cb) {
+    const pct = Math.max(0, Math.min(100, cb.pct != null ? cb.pct : (cb.litros / cap) * 100));
+    const R = 52, L = 2 * Math.PI * R * (240 / 360);
+    const rayas = [0, .25, .5, .75, 1].map(f => {
+      const a = (150 + 240 * f) * Math.PI / 180, x1 = 70 + 62 * Math.cos(a), y1 = 66 + 62 * Math.sin(a), x2 = 70 + 67 * Math.cos(a), y2 = 66 + 67 * Math.sin(a);
+      return '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '"/>';
+    }).join('');
+    const arco = 'M ' + (70 + R * Math.cos(150 * Math.PI / 180)).toFixed(2) + ' ' + (66 + R * Math.sin(150 * Math.PI / 180)).toFixed(2) +
+      ' A ' + R + ' ' + R + ' 0 1 1 ' + (70 + R * Math.cos(30 * Math.PI / 180)).toFixed(2) + ' ' + (66 + R * Math.sin(30 * Math.PI / 180)).toFixed(2);
+    const d = el('div', 'dial' + (cb.bajo ? ' bajo' : ''));
+    d.innerHTML = '<svg viewBox="0 0 140 118" role="img" aria-label="Depósito al ' + nf(pct) + ' por ciento">' +
+      '<g class="rayas">' + rayas + '</g>' +
+      '<path class="pista" d="' + arco + '"/>' +
+      '<path class="nivel" d="' + arco + '" stroke-dasharray="' + L.toFixed(1) + '" stroke-dashoffset="' + (L * (1 - pct / 100)).toFixed(1) + '"/>' +
+      '<text class="pct" x="70" y="72" text-anchor="middle">' + nf(pct) + '<tspan class="pct-u" dx="2">%</tspan></text>' +
+      '<text class="ef" x="22" y="112" text-anchor="middle">E</text><text class="ef" x="118" y="112" text-anchor="middle">F</text></svg>';
+    const t = el('div', 'dial-txt');
+    t.append(el('strong', null, cb.litros != null ? nf(cb.litros) + ' L' : nf(pct) + ' %'),
+      el('span', null, cb.bajo ? 'En reserva' : cb.litros != null ? 'Caben ' + nf(Math.max(0, cap - cb.litros)) + ' L hasta llenar' : 'de ' + nf(cap) + ' L'));
+    if (cb.autonomia_km != null) t.append(el('span', null, nf(cb.autonomia_km) + ' km de autonomía'));
+    d.append(t);
+    return d;
+  }
+
   function pintarCoche() {
     const body = $('carTop'), mid = $('carMid'), bot = $('carBottom'), meta = $('carMeta');
     body.innerHTML = ''; mid.innerHTML = ''; bot.innerHTML = '';
@@ -1548,27 +1660,14 @@
       meta.textContent = cocheMsg === 'falta' ? 'Aún no hay datos del coche. Pulsa «Actualizar» (tarda 1-2 minutos).' : (cocheMsg || 'Cargando los datos del coche…');
       return;
     }
-    meta.textContent = 'Último dato del coche: ' + cuando(coche.dato) + '.' + (cocheMsg && cocheMsg !== 'falta' ? ' ' + cocheMsg : '');
+    meta.textContent = cocheMsg && cocheMsg !== 'falta' ? cocheMsg : '';
     if (coche.ultimo_error && coche.ultimo_error.mensaje) body.append(el('p', 'car-warn', 'Última consulta (' + cuando(coche.ultimo_error.hora) + '): ' + coche.ultimo_error.mensaje));
 
     // Datos principales
     const g = el('div', 'car-grid');
     const cb = coche.combustible || {};
-    if (coche.km != null) g.append(tarjeta('Kilómetros', nf(coche.km) + ' km'));
-    if (coche.km != null) {
-      const ac = aj.aceite, t = ac.proximo_km
-        ? (() => { const falta = ac.proximo_km - coche.km;
-            return tarjeta('Cambio de aceite', falta > 0 ? 'faltan ' + nf(falta) + ' km' : 'toca ya',
-              falta > 0 ? 'a los ' + nf(ac.proximo_km) + ' km' : 'te has pasado ' + nf(-falta) + ' km', falta <= (ac.antelacion_km || 0)); })()
-        : tarjeta('Cambio de aceite', 'Sin fijar', 'Tócalo para ponerlo');
-      t.classList.add('clic'); t.addEventListener('click', abrirAjustes); g.append(t);
-    }
-    if (cb.litros != null || cb.pct != null) {
-      const partes = [cb.litros != null ? nf(cb.litros) + ' L' : null, cb.pct != null ? nf(cb.pct) + ' %' : null].filter(Boolean).join(' · ');
-      const nota = cb.bajo ? 'En reserva' : cb.litros != null ? 'Caben ' + nf(Math.max(0, cap - cb.litros)) + ' L' : '';
-      g.append(tarjeta('Combustible', partes, nota, cb.bajo));
-    }
-    if (cb.autonomia_km != null) g.append(tarjeta('Autonomía', nf(cb.autonomia_km) + ' km'));
+    pintarHero();
+    if (cb.pct != null || cb.litros != null) body.append(dialDeposito(cb));
     const rv = coche.revision || {};
     if (rv.km != null || rv.dias != null) {
       g.append(tarjeta('Próxima revisión', rv.km != null ? 'en ' + nf(rv.km) + ' km' : 'en ' + nf(rv.dias) + ' días',
@@ -1589,7 +1688,8 @@
         const p = RUEDAS[n.rueda], mal = n.aviso || (n.estado && n.estado !== 'NORMAL');
         const d = el('div', 'tyre' + (mal ? ' bad' : ''));
         d.style.gridColumn = p[0]; d.style.gridRow = p[1];
-        d.append(el('b', null, n.bar != null ? nf(n.bar, 2) : '–'), el('span', null, p[2] + (mal ? ' · revisar' : ' · bar')));
+        const v = el('b', null, n.bar != null ? nf(n.bar, 2) : '–'); v.append(el('small', null, ' bar'));
+        d.append(v, el('span', null, mal ? p[2] + ', revisar' : p[2]));
         t.append(d);
       });
       sn.append(t);
@@ -1601,11 +1701,19 @@
     if (u && u.lat != null && u.lon != null) {
       const su = panel(mid, 'Dónde lo aparcaste');
       su.append(el('p', 'near-meta', 'Última posición que envió el coche' + (u.aproximada ? ' (aproximada)' : '') + ', ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
-      const dy = 0.0035, dx = 0.0055;
+      const caja = el('div', 'mapa-box');
       const f = document.createElement('iframe');
-      f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer';
-      f.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + [u.lon - dx, u.lat - dy, u.lon + dx, u.lat + dy].join(',') + '&layer=mapnik&marker=' + u.lat + ',' + u.lon;
-      su.append(f);
+      f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer-when-downgrade';
+      const urlMapa = t => 'https://maps.google.com/maps?q=' + u.lat + ',' + u.lon + '&z=17&t=' + t + '&hl=es&output=embed';
+      let tipo = store.get('mapaTipo') === 'k' ? 'k' : 'm';
+      f.src = urlMapa(tipo);
+      const sel = el('div', 'mapa-tipo'); sel.setAttribute('role', 'group'); sel.setAttribute('aria-label', 'Tipo de mapa');
+      [['m', 'Mapa'], ['k', 'Satélite']].forEach(([v, txt]) => {
+        const b = el('button', v === tipo ? 'on' : null, txt); b.type = 'button';
+        b.addEventListener('click', () => { if (tipo === v) return; tipo = v; store.set('mapaTipo', v); f.src = urlMapa(v); sel.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); });
+        sel.append(b);
+      });
+      caja.append(f, sel); su.append(caja);
       const links = el('div', 'car-links');
       const a1 = el('a', null, 'Ir al coche'); a1.href = 'https://www.google.com/maps/dir/?api=1&destination=' + u.lat + ',' + u.lon + '&travelmode=walking';
       const a2 = el('a', null, 'Abrir en Maps'); a2.href = 'https://www.google.com/maps/search/?api=1&query=' + u.lat + ',' + u.lon;
@@ -1672,8 +1780,15 @@
   function pintarBotones() {
     const box = $('carBtns'); box.innerHTML = '';
     const disp = coche && coche.comandos && coche.comandos.length ? coche.comandos : ['RDL', 'RDU', 'ROLIGHTS'];
+    const ICO = {
+      cerrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+      abrir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
+      luces: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6c-4 0-6 2.7-6 6s2 6 6 6c1.5 0 2-1.5 2-6s-.5-6-2-6z"/><path d="M15 8h6M15 12h6M15 16h6"/></svg>'
+    };
     ['cerrar', 'abrir', 'luces'].forEach(k => {
-      const b = el('button', null, ACC[k].txt); b.type = 'button';
+      const b = el('button'); b.type = 'button';
+      const r = el('span', 'redondo'); r.innerHTML = ICO[k];
+      b.append(r, el('span', null, ACC[k].txt)); b.setAttribute('aria-label', ACC[k].txt);
       b.disabled = !!orden || !cfg() || !disp.includes(ACC[k].cmd);
       b.addEventListener('click', () => enviarOrden(k));
       box.append(b);
