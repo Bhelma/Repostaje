@@ -284,6 +284,7 @@
   .aj h3.primero { border-top: 0; padding-top: 0; margin-top: 4px; }
   .aj-estado { color: var(--muted); font-size: .95rem; margin: 4px 0 8px; }
   .aj-estado:empty { display: none; }
+  .aj.solo-aceite .aj-resto { display: none; }
   .aj-estado b { color: var(--ink); }
   .aj .near-btn { margin-top: 10px; }
   .aj .row2 { display: flex; gap: 8px; }
@@ -723,9 +724,9 @@
 </dialog>
 
 <dialog id="ajDlg" class="sheet aj">
-  <h2>Ajustes</h2>
+  <h2 id="ajTitulo">Ajustes</h2>
 
-  <h3 class="primero">Cambio de aceite</h3>
+  <h3 class="primero aj-resto">Cambio de aceite</h3>
   <p class="aj-estado" id="ajAceiteEstado"></p>
   <div class="ed-grid">
     <label class="full"><span>Próximo cambio a los (km)</span><input id="ajAceiteKm" type="text" inputmode="numeric" placeholder="120000" autocomplete="off"></label>
@@ -734,6 +735,7 @@
   </div>
   <button type="button" class="near-btn ghost" id="ajAceiteHecho">He cambiado el aceite</button>
 
+  <div class="aj-resto">
   <h3>Notificaciones</h3>
   <p class="aj-estado" id="ajPushEstado"></p>
   <div class="row2">
@@ -768,6 +770,8 @@
   </div>
   <div class="aj-row"><span>Tema</span>
     <div class="toggle" id="ajTema" role="group" aria-label="Tema"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Claro</button><button type="button" data-v="dark">Oscuro</button></div>
+  </div>
+
   </div>
 
   <p class="aj-estado" id="ajMsg"></p>
@@ -1623,7 +1627,7 @@
       h.textContent = falta > 0 ? nf(falta) + ' km' : 'ya';
       h.classList.toggle('alerta', falta <= (ac.antelacion_km || 0));
     } else { h.textContent = 'fijar'; h.classList.remove('alerta'); }
-    h.parentElement.classList.add('clic'); h.parentElement.onclick = abrirAjustes;
+    h.parentElement.classList.add('clic'); h.parentElement.onclick = abrirAceite;
     $('hMeta').textContent = c.dato ? 'Último dato del coche ' + cuando(c.dato) + '.' : '';
   }
   // Depósito como reloj: arco de 240° con la aguja en el nivel
@@ -1921,7 +1925,12 @@
     $('ajAceiteEstado').innerHTML = partes.length ? partes.join(', ') + '.' : 'Pon a cuántos km quieres el próximo cambio.';
   }
 
-  function abrirAjustes() {
+  // Desde la cabecera de Mi Giulia: solo la parte del cambio de aceite
+  function abrirAceite() { abrirAjustes('aceite'); }
+  function abrirAjustes(seccion) {
+    const solo = seccion === 'aceite';
+    $('ajDlg').classList.toggle('solo-aceite', solo);
+    $('ajTitulo').textContent = solo ? 'Cambio de aceite' : 'Ajustes';
     const a = aj;
     ajAceiteUltimo = null;
     $('ajAceiteKm').value = a.aceite.proximo_km ? String(Math.round(a.aceite.proximo_km)) : '';
@@ -1942,7 +1951,7 @@
     $('ajDlg').showModal();
     if (cfg()) cargarAjustesRemotos().then(() => { pintarUltimoAviso(); pintarPush(); });
   }
-  $('ajBtn').addEventListener('click', abrirAjustes);
+  $('ajBtn').addEventListener('click', () => abrirAjustes());
   $('ajCancel').addEventListener('click', () => $('ajDlg').close());
   $('ajAceiteKm').addEventListener('input', pintarEstadoAceite);
   $('ajAceiteHecho').addEventListener('click', () => {
