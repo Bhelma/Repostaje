@@ -1,8 +1,11 @@
 name: Actualizar precios
 
+# Cada intento se ejecuta en una máquina nueva de GitHub, con otra dirección IP.
+# Si el Ministerio rechaza una, se espera un rato y se prueba con otra (hasta 3).
+
 on:
   schedule:
-    - cron: "17 */6 * * *"   # cada 6 horas: 00:17, 06:17, 12:17 y 18:17 UTC (GitHub puede retrasarlo un poco)
+    - cron: "17 */6 * * *"   # cada 6 horas: 00:17, 06:17, 12:17 y 18:17 UTC (GitHub puede retrasarlo)
   workflow_dispatch:          # botón "Run workflow" para lanzarlo a mano
 
 permissions:
@@ -10,18 +13,76 @@ permissions:
 
 concurrency:
   group: precios
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  actualizar:
+  intento1:
     runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.descarga.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Descargar precios del Ministerio
-        timeout-minutes: 20
+        id: descarga
+        continue-on-error: true
+        timeout-minutes: 15
+        run: python scripts/actualizar.py
+      - name: Guardar cambios
+        if: steps.descarga.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add data/precios.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Precios actualizados"
+          git pull --rebase -X theirs || true
+          git push
+
+  intento2:
+    needs: intento1
+    if: needs.intento1.outputs.ok != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.descarga.outcome == 'success' }}
+    steps:
+      - name: Esperar 5 minutos
+        run: sleep 300
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Descargar precios del Ministerio
+        id: descarga
+        continue-on-error: true
+        timeout-minutes: 15
+        run: python scripts/actualizar.py
+      - name: Guardar cambios
+        if: steps.descarga.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add data/precios.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Precios actualizados"
+          git pull --rebase -X theirs || true
+          git push
+
+  intento3:
+    needs: [intento1, intento2]
+    if: always() && needs.intento1.outputs.ok != 'true' && needs.intento2.outputs.ok != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Esperar 15 minutos
+        run: sleep 900
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Descargar precios del Ministerio
+        timeout-minutes: 15
         run: python scripts/actualizar.py
       - name: Guardar cambios
         run: |
