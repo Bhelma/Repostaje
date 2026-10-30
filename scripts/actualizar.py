@@ -6,6 +6,7 @@ es muy lento, y muchas peticiones a la vez hacen que el servidor del Ministerio 
 """
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.request
@@ -42,7 +43,25 @@ def descargar(prov, timeout=90, intentos=3):
                 return json.loads(r.read().decode("utf-8"))
         except Exception as e:  # noqa: BLE001
             print(f"Provincia {prov or 'todas'}, intento {intento + 1}: {e}", file=sys.stderr)
-            time.sleep(10 * (intento + 1))
+        # Segundo camino: curl conecta de otra forma y a veces el servidor lo acepta cuando a Python no.
+        d = con_curl(url, timeout)
+        if d is not None:
+            return d
+        time.sleep(10 * (intento + 1))
+    return None
+
+
+def con_curl(url, timeout):
+    cmd = ["curl", "-sS", "--compressed", "--max-time", str(timeout)]
+    for k, v in CABECERAS.items():
+        cmd += ["-H", f"{k}: {v}"]
+    try:
+        r = subprocess.run(cmd + [url], capture_output=True, timeout=timeout + 10)
+        if r.returncode == 0 and r.stdout:
+            return json.loads(r.stdout.decode("utf-8"))
+        print(f"  curl: {r.stderr.decode('utf-8', 'replace').strip()[:150]}", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print(f"  curl: {e}", file=sys.stderr)
     return None
 
 
