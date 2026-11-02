@@ -2191,6 +2191,8 @@
     const ign = () => {};
     const pasarConfig = () => { const c = cfg(); MG.llamar('guardarConfig', { repo: c ? c.repo : '', token: c ? c.token : '' }).catch(ign); };
     pasarConfig();
+    // Permiso para la notificación fija de vigilancia y los avisos del coche (Android solo lo pregunta si hace falta)
+    MG.llamar('pedirNotificaciones').catch(ign);
     // La clave de GitHub también la necesitan los widgets: se la pasamos al guardarla o quitarla
     const setOrig = store.set;
     store.set = (k, v) => { setOrig.call(store, k, v); if (k === 'gh') pasarConfig(); };
