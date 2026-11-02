@@ -2180,11 +2180,16 @@
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
   // ---- App Android: puente con widgets, Bluetooth del coche y ficheros ----
-  const MG = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.registerPlugin)
-    ? window.Capacitor.registerPlugin('MiGiulia') : null;
+  // La app carga esta web desde GitHub Pages: el puente de Capacitor está, pero sin @capacitor/core,
+  // así que se llama directamente con nativePromise / addListener.
+  const CAP = window.Capacitor;
+  const MG = (CAP && CAP.isNativePlatform && CAP.isNativePlatform() && CAP.nativePromise) ? {
+    llamar: (metodo, opciones) => CAP.nativePromise('MiGiulia', metodo, opciones || {}),
+    escuchar: (evento, f) => CAP.addListener('MiGiulia', evento, f)
+  } : null;
   if (MG) {
     const ign = () => {};
-    const pasarConfig = () => { const c = cfg(); MG.guardarConfig({ repo: c ? c.repo : '', token: c ? c.token : '' }).catch(ign); };
+    const pasarConfig = () => { const c = cfg(); MG.llamar('guardarConfig', { repo: c ? c.repo : '', token: c ? c.token : '' }).catch(ign); };
     pasarConfig();
     // La clave de GitHub también la necesitan los widgets: se la pasamos al guardarla o quitarla
     const setOrig = store.set;
@@ -2193,15 +2198,15 @@
     const pintarOrig = pintar;
     pintar = function () {
       pintarOrig.apply(this, arguments);
-      if (pos) MG.guardarPosicion({ lat: pos.lat, lon: pos.lon, fuel }).catch(ign);
+      if (pos) MG.llamar('guardarPosicion', { lat: pos.lat, lon: pos.lon, fuel }).catch(ign);
     };
     // Exportar a Excel y copia de seguridad: menú de Android para guardar o compartir
-    descargar = (nombre, texto, tipo) => MG.compartirArchivo({ nombre, texto, mime: tipo }).catch(e => alert(e.message || e));
+    descargar = (nombre, texto, tipo) => MG.llamar('compartirArchivo', { nombre, texto, mime: tipo }).catch(e => alert(e.message || e));
     // Al activar o apagar la vigilancia desde la app, refrescar el widget
     const vigOrig = ponerVigilancia;
-    ponerVigilancia = async function (activar) { await vigOrig(activar); MG.refrescarWidgets({ retraso: 0 }).catch(ign); };
+    ponerVigilancia = async function (activar) { await vigOrig(activar); MG.llamar('refrescarWidgets', { retraso: 0 }).catch(ign); };
     // Abierta desde un widget
-    MG.addListener('accion', d => {
+    MG.escuchar('accion', d => {
       const a = d && d.accion;
       if (a === 'repostar') { vista('rep'); setTimeout(() => { try { $('importe').focus(); } catch (e) {} }, 300); }
       else if (a === 'gasolineras') { vista('rep'); setTimeout(() => { try { $('nearBtn').scrollIntoView({ block: 'center' }); $('nearBtn').click(); } catch (e) {} }, 300); }
@@ -2219,7 +2224,7 @@
     const ancla = $('ajVigRadio') && $('ajVigRadio').closest('.ed-grid');
     if (ancla) ancla.after(sec);
     let btSel = { nombre: '', direccion: '' };
-    const pintarBt = (msg) => MG.estadoBluetooth().then(r => {
+    const pintarBt = (msg) => MG.llamar('estadoBluetooth').then(r => {
       btSel = { nombre: r.nombre || '', direccion: r.direccion || '' };
       $('btAuto').checked = !!r.auto;
       const sel = $('btLista');
@@ -2231,9 +2236,9 @@
         ? 'Activa con «' + (btSel.nombre || btSel.direccion) + '». Al apagar el coche y desconectarse, la vigilancia se activa a los 2 minutos; al conectarte, se apaga.'
         : 'Elige el Bluetooth del Giulia y marca la casilla. No gasta batería: Android avisa a la app solo cuando el móvil se conecta o desconecta.');
     }).catch(ign);
-    const guardarBt = (msg) => MG.configurarBluetooth({ auto: $('btAuto').checked && !!btSel.direccion, nombre: btSel.nombre, direccion: btSel.direccion }).then(() => pintarBt(msg)).catch(ign);
+    const guardarBt = (msg) => MG.llamar('configurarBluetooth', { auto: $('btAuto').checked && !!btSel.direccion, nombre: btSel.nombre, direccion: btSel.direccion }).then(() => pintarBt(msg)).catch(ign);
     $('btBuscar').addEventListener('click', () => {
-      MG.listarBluetooth().then(r => {
+      MG.llamar('listarBluetooth').then(r => {
         const sel = $('btLista'); sel.innerHTML = '';
         const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '— Elige el coche —'; sel.appendChild(o0);
         (r.dispositivos || []).forEach(d => { const o = document.createElement('option'); o.value = d.direccion; o.textContent = d.nombre; sel.appendChild(o); });
