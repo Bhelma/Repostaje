@@ -2179,6 +2179,81 @@
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
+  // ---- App Android: puente con widgets, Bluetooth del coche y ficheros ----
+  const MG = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.registerPlugin)
+    ? window.Capacitor.registerPlugin('MiGiulia') : null;
+  if (MG) {
+    const ign = () => {};
+    const pasarConfig = () => { const c = cfg(); MG.guardarConfig({ repo: c ? c.repo : '', token: c ? c.token : '' }).catch(ign); };
+    pasarConfig();
+    // La clave de GitHub también la necesitan los widgets: se la pasamos al guardarla o quitarla
+    const setOrig = store.set;
+    store.set = (k, v) => { setOrig.call(store, k, v); if (k === 'gh') pasarConfig(); };
+    // Posición de la última búsqueda, para el widget del diésel más barato
+    const pintarOrig = pintar;
+    pintar = function () {
+      pintarOrig.apply(this, arguments);
+      if (pos) MG.guardarPosicion({ lat: pos.lat, lon: pos.lon, fuel }).catch(ign);
+    };
+    // Exportar a Excel y copia de seguridad: menú de Android para guardar o compartir
+    descargar = (nombre, texto, tipo) => MG.compartirArchivo({ nombre, texto, mime: tipo }).catch(e => alert(e.message || e));
+    // Al activar o apagar la vigilancia desde la app, refrescar el widget
+    const vigOrig = ponerVigilancia;
+    ponerVigilancia = async function (activar) { await vigOrig(activar); MG.refrescarWidgets({ retraso: 0 }).catch(ign); };
+    // Abierta desde un widget
+    MG.addListener('accion', d => {
+      const a = d && d.accion;
+      if (a === 'repostar') { vista('rep'); setTimeout(() => { try { $('importe').focus(); } catch (e) {} }, 300); }
+      else if (a === 'gasolineras') { vista('rep'); setTimeout(() => { try { $('nearBtn').scrollIntoView({ block: 'center' }); $('nearBtn').click(); } catch (e) {} }, 300); }
+      else if (a === 'coche') vista('car');
+    });
+
+    // Ajustes: vigilancia automática con el Bluetooth del coche
+    const sec = document.createElement('div');
+    sec.className = 'bt-auto';
+    sec.innerHTML = '<h3>Vigilancia automática</h3>' +
+      '<p class="aj-estado" id="btEstado"></p>' +
+      '<label class="chk"><input type="checkbox" id="btAuto"> Con el Bluetooth del coche: al desconectarse se activa, al conectarse se apaga</label>' +
+      '<div class="ed-grid" style="margin-top:8px"><label class="full"><span>Bluetooth del coche</span><select id="btLista" style="width:100%;font:inherit;font-size:1.05rem;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"><option value="">Pulsa «Buscar» para ver la lista</option></select></label></div>' +
+      '<button type="button" class="near-btn ghost" id="btBuscar" style="margin-top:8px">Buscar dispositivos vinculados</button>';
+    const ancla = $('ajVigRadio') && $('ajVigRadio').closest('.ed-grid');
+    if (ancla) ancla.after(sec);
+    let btSel = { nombre: '', direccion: '' };
+    const pintarBt = (msg) => MG.estadoBluetooth().then(r => {
+      btSel = { nombre: r.nombre || '', direccion: r.direccion || '' };
+      $('btAuto').checked = !!r.auto;
+      const sel = $('btLista');
+      if (btSel.direccion && ![...sel.options].some(o => o.value === btSel.direccion)) {
+        const o = document.createElement('option'); o.value = btSel.direccion; o.textContent = btSel.nombre || btSel.direccion; sel.appendChild(o);
+      }
+      sel.value = btSel.direccion;
+      $('btEstado').textContent = msg || (r.auto && btSel.direccion
+        ? 'Activa con «' + (btSel.nombre || btSel.direccion) + '». Al apagar el coche y desconectarse, la vigilancia se activa a los 2 minutos; al conectarte, se apaga.'
+        : 'Elige el Bluetooth del Giulia y marca la casilla. No gasta batería: Android avisa a la app solo cuando el móvil se conecta o desconecta.');
+    }).catch(ign);
+    const guardarBt = (msg) => MG.configurarBluetooth({ auto: $('btAuto').checked && !!btSel.direccion, nombre: btSel.nombre, direccion: btSel.direccion }).then(() => pintarBt(msg)).catch(ign);
+    $('btBuscar').addEventListener('click', () => {
+      MG.listarBluetooth().then(r => {
+        const sel = $('btLista'); sel.innerHTML = '';
+        const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '— Elige el coche —'; sel.appendChild(o0);
+        (r.dispositivos || []).forEach(d => { const o = document.createElement('option'); o.value = d.direccion; o.textContent = d.nombre; sel.appendChild(o); });
+        sel.value = btSel.direccion || '';
+        $('btEstado').textContent = (r.dispositivos || []).length ? 'Elige el coche en la lista.' : 'No hay dispositivos vinculados. Vincula antes el móvil con el coche.';
+      }).catch(e => { $('btEstado').textContent = 'Sin permiso para ver el Bluetooth. Permítelo en Ajustes de Android → Aplicaciones → Mi Giulia → Permisos → Dispositivos cercanos.'; });
+    });
+    $('btLista').addEventListener('change', () => {
+      const o = $('btLista').selectedOptions[0];
+      btSel = { nombre: o && o.value ? o.textContent : '', direccion: $('btLista').value };
+      guardarBt();
+    });
+    $('btAuto').addEventListener('change', () => {
+      if ($('btAuto').checked && !btSel.direccion) { $('btAuto').checked = false; pintarBt('Primero elige el Bluetooth del coche.'); return; }
+      if ($('btAuto').checked && !cfg()) { $('btAuto').checked = false; pintarBt('Conecta antes la copia en GitHub (pestaña Repostaje).'); return; }
+      guardarBt();
+    });
+    pintarBt();
+  }
+
   render();
 })();
 </script>
