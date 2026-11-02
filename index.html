@@ -358,6 +358,36 @@
 
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  /* Manuales */
+  .man-buscar { display: flex; gap: 8px; margin-top: 12px; }
+  .man-buscar input { flex: 1; min-width: 0; font: inherit; font-size: 1.08rem; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .man-buscar input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+  .man-buscar button { flex: none; width: auto; margin: 0; padding: 0 16px; }
+  #manLibro { margin-top: 10px; flex-wrap: wrap; }
+  .man-sug { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .man-sug button { font: inherit; font-size: .9rem; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .man-res { list-style: none; margin: 8px 0 0; padding: 0; }
+  .man-res li + li { border-top: 1px solid var(--line); }
+  .man-res button { display: block; width: 100%; text-align: left; font: inherit; color: var(--ink); background: none; border: 0; padding: 12px 2px; cursor: pointer; }
+  .man-res button:active { background: var(--red-soft); }
+  .man-res .t { font-weight: 700; font-size: 1.05rem; display: block; }
+  .man-res .m { color: var(--muted); font-size: .88rem; display: block; margin-top: 2px; }
+  .man-res .x { display: block; margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+  .man-res mark { background: var(--red-soft); color: inherit; border-radius: 3px; padding: 0 1px; font-weight: 600; }
+  dialog.man-visor { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; margin: 0; padding: 0; border-radius: 0; display: none; flex-direction: column; background: var(--bg); }
+  dialog.man-visor[open] { display: flex; }
+  .mv-cab { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .mv-cab .mv-tit { flex: 1; min-width: 0; }
+  .mv-cab b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mv-cab small { color: var(--muted); }
+  .mv-btn { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+  .mv-btn:disabled { opacity: .4; }
+  .mv-cuerpo { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: #fff; display: flex; align-items: flex-start; justify-content: center; }
+  .mv-cuerpo img { display: block; width: 100%; height: auto; }
+  .mv-cuerpo.zoom img { width: 220%; max-width: none; }
+  .mv-cuerpo p { color: #5E6973; padding: 40px 20px; text-align: center; }
+  .mv-pie { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--panel); border-top: 1px solid var(--line); }
+  .mv-pie .mv-btn { flex: 1; }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; gap: 6px;
     background: color-mix(in srgb, var(--panel) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); }
   .tabs button { flex: 1; max-width: 220px; display: flex; flex-direction: column; align-items: center; gap: 2px; font: inherit; font-weight: 600; font-size: .92rem;
@@ -553,7 +583,35 @@
     </section>
     <div id="carBottom"></div>
   </div>
+
+  <div id="vMan" hidden>
+    <section class="near">
+      <div class="near-head"><h2>Manuales del coche</h2></div>
+      <p class="near-meta" style="margin-top:6px">Pregunta con tus palabras: busca en el manual del Giulia y en el del sistema multimedia y te enseña las páginas.</p>
+      <div class="man-buscar">
+        <input id="manQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Por ejemplo: reiniciar la presión de los neumáticos">
+        <button type="button" class="near-btn" id="manIr">Buscar</button>
+      </div>
+      <div class="toggle" id="manLibro" role="group" aria-label="En qué manual buscar"></div>
+      <div class="man-sug" id="manSug"></div>
+      <p class="near-meta" id="manEstado"></p>
+      <ul class="man-res" id="manRes"></ul>
+    </section>
+  </div>
 </main>
+
+<dialog id="manVisor" class="man-visor" aria-label="Página del manual">
+  <div class="mv-cab">
+    <div class="mv-tit"><b id="mvLibro"></b><small id="mvPag"></small></div>
+    <button type="button" class="mv-btn" id="mvZoom" aria-label="Ampliar">⤢</button>
+    <button type="button" class="mv-btn" id="mvCerrar">Cerrar</button>
+  </div>
+  <div class="mv-cuerpo" id="mvCuerpo"></div>
+  <div class="mv-pie">
+    <button type="button" class="mv-btn" id="mvAnt">‹ Anterior</button>
+    <button type="button" class="mv-btn" id="mvSig">Siguiente ›</button>
+  </div>
+</dialog>
 
 <nav class="tabs" id="tabs" aria-label="Secciones">
   <button type="button" data-v="rep">
@@ -563,6 +621,10 @@
   <button type="button" data-v="car">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16v-3.5l2.5-5A2 2 0 0 1 6.3 6.5h9.2a2 2 0 0 1 1.6.8l3.2 4.2 1.7.7V16"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/></svg>
     Mi Giulia
+  </button>
+  <button type="button" data-v="man">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h5"/></svg>
+    Manuales
   </button>
 </nav>
 
@@ -2159,12 +2221,253 @@
     cargarCoche(true).then(() => ponerVigilancia(pv === '1'));
   }
 
+  // ---- Buscador de los manuales (sin IA externa: índice propio con raíces de palabras y sinónimos) ----
+  const BM = (() => {
+    const VACIAS = new Set(('a al algo ante antes como con contra cual cuando de del desde donde durante e el ella ellos en entre era es esa ese eso esta este esto estos fue ha hace hacer hay la las le les lo los mas me mi mis muy ni no nos o os otra otro para pero poco por porque puede pueden que quien se sea segun ser si sin sobre solo son su sus tambien tanto te tengo tiene tienen todo todos tu un una uno unos y ya yo cómo como hago hacer debo deber quiero puedo funciona'
+      ).split(' ').map(w => w.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+    // Palabras que la gente usa y el manual dice de otra forma (se comparan por raíz)
+    const SINONIMOS = [
+      ['rueda', 'neumatico', 'llanta', 'cubierta'], ['movil', 'telefono', 'smartphone', 'celular'],
+      ['emparejar', 'vincular', 'conectar', 'asociar'], ['quitar', 'desactivar', 'apagar', 'deshabilitar'],
+      ['poner', 'activar', 'encender', 'habilitar'], ['reiniciar', 'restablecer', 'resetear', 'reset', 'reinicializar'],
+      ['gasolina', 'gasoil', 'diesel', 'combustible', 'carburante'], ['deposito', 'tanque'],
+      ['luz', 'luces', 'faro', 'faros', 'iluminacion'], ['testigo', 'piloto', 'indicador', 'aviso', 'advertencia'],
+      ['aparcar', 'estacionar', 'aparcamiento', 'estacionamiento', 'parking'], ['maletero', 'portaequipajes', 'baul'],
+      ['mando', 'llave', 'transmisor'], ['hora', 'reloj'], ['musica', 'audio', 'radio'],
+      ['navegador', 'navegacion', 'gps', 'mapa'], ['aceite', 'lubricante'], ['bateria', 'acumulador'],
+      ['pinchazo', 'pinchar', 'reventon'], ['limpiaparabrisas', 'escobilla', 'limpiaparabrisa'],
+      ['climatizador', 'climatizacion', 'aire', 'calefaccion'], ['velocidad', 'crucero'],
+      ['android', 'carplay', 'proyeccion'], ['maletero', 'cajuela', 'portaequipajes'],
+      ['pinchazo', 'ponchadura', 'ponchar', 'ponchado'], ['parachoques', 'defensa', 'paragolpes'],
+      ['coche', 'vehiculo', 'carro', 'automovil'], ['remolcar', 'remolque', 'grua'],
+      ['pulsar', 'presionar', 'oprimir', 'boton'], ['intermitente', 'direccional', 'senalizador'],
+      ['salpicadero', 'tablero', 'cuadro'], ['matricula', 'placa'], ['claxon', 'bocina'],
+      ['retrovisor', 'espejo'], ['guantera', 'compartimento'], ['luna', 'cristal', 'vidrio', 'parabrisas']
+    ];
+    // Formas de "presionar" que si no se confundirían con "presión"
+    const VERBOS = { presione: 'pulsar', presiona: 'pulsar', presionar: 'pulsar', presionando: 'pulsar', presionado: 'pulsar',
+      presionada: 'pulsar', pulse: 'pulsar', pulsa: 'pulsar', oprima: 'pulsar', oprimir: 'pulsar', apriete: 'pulsar' };
+    const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ]+/g, ' ');
+    const raiz = w => {
+      if (VERBOS[w]) w = VERBOS[w];
+      if (/^\d+$/.test(w)) return w;
+      if (w.length > 4 && w.endsWith('es') && !w.endsWith('ces')) w = w.slice(0, -2);
+      else if (w.length > 3 && w.endsWith('s')) w = w.slice(0, -1);
+      return w.length > 6 ? w.slice(0, 6) : w;
+    };
+    const SIN = new Map();
+    SINONIMOS.forEach(g => { const rs = g.map(raiz); rs.forEach(r => SIN.set(r, rs)); });
+    const fichas = t => norm(t).split(' ').filter(w => w && w.length > 1 && !VACIAS.has(w));
+
+    let paginas = [], df = new Map(), largoMedio = 1;
+    function preparar(indice) {
+      paginas = indice.paginas.map(p => {
+        const tf = new Map(), tt = new Map(), palabras = fichas(p.txt);
+        palabras.forEach(w => { const r = raiz(w); tf.set(r, (tf.get(r) || 0) + 1); });
+        fichas((p.tit || []).join(' ') + ' ' + (p.sec || '')).forEach(w => { const r = raiz(w); tt.set(r, (tt.get(r) || 0) + 1); });
+        return { ...p, tf, tt, largo: palabras.length || 1, secuencia: palabras.map(raiz).join(' ') };
+      });
+      df = new Map();
+      paginas.forEach(p => new Set([...p.tf.keys(), ...p.tt.keys()]).forEach(r => df.set(r, (df.get(r) || 0) + 1)));
+      largoMedio = paginas.reduce((a, p) => a + p.largo, 0) / Math.max(1, paginas.length);
+    }
+    function buscar(consulta, libro, max = 10) {
+      const terms = [...new Set(fichas(consulta).map(raiz))];
+      if (!terms.length) return [];
+      const N = paginas.length, k1 = 1.2, b = 0.75;
+      const idf = r => Math.log(1 + (N - (df.get(r) || 0) + 0.5) / ((df.get(r) || 0) + 0.5));
+      const res = [];
+      for (const p of paginas) {
+        if (libro && p.libro !== libro) continue;
+        let s = 0, cubiertos = 0;
+        for (const t of terms) {
+          let mejor = 0;
+          for (const r of (SIN.get(t) || [t])) {
+            const f = (p.tf.get(r) || 0) + 5 * (p.tt.get(r) || 0);
+            if (!f) continue;
+            const v = idf(r) * (f * (k1 + 1)) / (f + k1 * (1 - b + b * p.largo / largoMedio)) * (r === t ? 1 : 0.7);
+            if (v > mejor) mejor = v;
+          }
+          if (mejor > 0) { s += mejor; cubiertos++; }
+        }
+        if (!s) continue;
+        s *= 0.5 + 0.5 * cubiertos / terms.length;              // premia que estén todas las palabras
+        if (terms.length > 1 && p.secuencia.includes(terms.join(' '))) s *= 1.4;  // y juntas
+        if (p.txt.length < 250) s *= 0.6;                          // páginas casi vacías o de índice
+        if (/\.{8,}/.test(p.txt)) s *= 0.35;                       // índice general
+        res.push({ p, s });
+      }
+      res.sort((a, b) => b.s - a.s);
+      return res.slice(0, max).map(x => ({ ...x, extracto: extracto(x.p, terms), titulo: tituloMejor(x.p, terms) }));
+    }
+    const coincide = (w, terms) => { const r = raiz(norm(w).trim()); return terms.some(t => (SIN.get(t) || [t]).includes(r)); };
+    function tituloMejor(p, terms) {
+      const t = (p.tit || []).map(x => ({ x, n: fichas(x).filter(w => coincide(w, terms)).length })).sort((a, b) => b.n - a.n)[0];
+      const r = t && t.n ? t.x : (p.tit && p.tit[0]) || p.sec || '';
+      return r.length > 70 ? r.slice(0, 67) + '…' : r;
+    }
+    function extracto(p, terms) {
+      const palabras = p.txt.split(' ');
+      const marca = palabras.map(w => coincide(w, terms));
+      const L = 34;
+      let mejor = 0, ini = 0;
+      for (let i = 0; i < palabras.length; i += 3) {
+        const vistos = new Set();
+        for (let j = i; j < Math.min(palabras.length, i + L); j++) if (marca[j]) vistos.add(raiz(norm(palabras[j]).trim()));
+        const sc = vistos.size * 10 + marca.slice(i, i + L).filter(Boolean).length;
+        if (sc > mejor) { mejor = sc; ini = i; }
+      }
+      const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const trozo = palabras.slice(ini, ini + L).map((w, k) => marca[ini + k] ? '<mark>' + esc(w) + '</mark>' : esc(w)).join(' ');
+      return (ini > 0 ? '… ' : '') + trozo + (ini + L < palabras.length ? ' …' : '');
+    }
+    return { preparar, buscar };
+  })();
+
+  const MAN = { indice: null, cargando: null, libro: store.get('manLibro') || '', urls: new Map(), actual: null, ultimo: '' };
+  const CACHE_MAN = 'mi-giulia-manuales';
+  const SUGERENCIAS = ['Reiniciar presión de neumáticos', 'Vincular el teléfono por Bluetooth', 'Testigos del cuadro',
+    'Kit de reparación de pinchazos', 'Cambiar una lámpara', 'Android Auto', 'Remolcar el coche', 'Capacidades'];
+  async function cacheMan() { try { return await caches.open(CACHE_MAN); } catch (e) { return null; } }
+
+  async function cargarManuales(forzar) {
+    if (MAN.indice && !forzar) return MAN.indice;
+    if (MAN.cargando) return MAN.cargando;
+    MAN.cargando = (async () => {
+      const est = $('manEstado');
+      if (!cfg()) { est.textContent = 'Conecta antes la copia en GitHub (pestaña Repostaje): los manuales están en tu repositorio privado.'; return null; }
+      const cache = await cacheMan();
+      let datos = null;
+      try {
+        const g = cache && !forzar ? await cache.match('indice') : null;
+        if (g && Date.now() - Number(g.headers.get('x-fecha') || 0) < 7 * 864e5) datos = await g.json();
+      } catch (e) {}
+      if (!datos) {
+        est.textContent = 'Descargando el índice de los manuales…';
+        try {
+          const r = await leerRepo('manuales/indice.json');
+          if (r.falta) { est.textContent = 'Aún no están preparados: sube los PDF a manuales/pdf del repositorio privado y espera a que termine «Preparar manuales» en Actions.'; return null; }
+          datos = r.datos;
+          if (cache) await cache.put('indice', new Response(JSON.stringify(datos), { headers: { 'Content-Type': 'application/json', 'x-fecha': String(Date.now()) } }));
+        } catch (e) { est.textContent = 'No he podido descargar los manuales. ' + (e && e.status ? errorTexto(e.status) : 'Revisa la conexión.'); return null; }
+      }
+      BM.preparar(datos);
+      MAN.indice = datos;
+      pintarLibros();
+      est.textContent = datos.libros.map(l => l.nombre + ' (' + l.paginas + ' págs.)').join(' · ');
+      return datos;
+    })();
+    try { return await MAN.cargando; } finally { MAN.cargando = null; }
+  }
+
+  function pintarLibros() {
+    const box = $('manLibro'); box.innerHTML = '';
+    const opciones = [['', 'Los dos']].concat(MAN.indice.libros.map(l => [l.id, l.id === 'giulia' ? 'Coche' : l.id === 'multimedia' ? 'Multimedia' : l.nombre]));
+    if (!opciones.some(o => o[0] === MAN.libro)) MAN.libro = '';
+    opciones.forEach(([id, txt]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.l = id; b.textContent = txt;
+      b.classList.toggle('on', id === MAN.libro); box.appendChild(b);
+    });
+  }
+  $('manLibro').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    MAN.libro = b.dataset.l; store.set('manLibro', MAN.libro);
+    document.querySelectorAll('#manLibro button').forEach(x => x.classList.toggle('on', x === b));
+    if ($('manQ').value.trim()) buscarManual();
+  });
+  SUGERENCIAS.forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+    b.addEventListener('click', () => { $('manQ').value = t; buscarManual(); });
+    $('manSug').appendChild(b);
+  });
+
+  async function buscarManual() {
+    const q = $('manQ').value.trim();
+    const ul = $('manRes');
+    if (!q) { ul.innerHTML = ''; $('manSug').hidden = false; return; }
+    if (!(await cargarManuales())) return;
+    $('manSug').hidden = true;
+    const res = BM.buscar(q, MAN.libro, 10);
+    MAN.ultimo = q;
+    ul.innerHTML = '';
+    $('manEstado').textContent = res.length ? res.length + ' páginas encontradas. Toca una para verla.' : 'No encuentro nada. Prueba con otras palabras (por ejemplo, la pieza o el testigo concreto).';
+    const nombreLibro = id => (MAN.indice.libros.find(l => l.id === id) || {}).nombre || id;
+    res.forEach(r => {
+      const li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+      const t = document.createElement('span'); t.className = 't'; t.textContent = r.titulo || ('Página ' + r.p.imp);
+      const m = document.createElement('span'); m.className = 'm'; m.textContent = nombreLibro(r.p.libro) + ' · pág. ' + r.p.imp + (r.p.sec ? ' · ' + r.p.sec : '');
+      const x = document.createElement('span'); x.className = 'x'; x.innerHTML = r.extracto;
+      b.append(t, m, x);
+      b.addEventListener('click', () => abrirPagina(r.p.libro, r.p.p));
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  let manTimer = null;
+  $('manQ').addEventListener('input', () => { clearTimeout(manTimer); manTimer = setTimeout(buscarManual, 450); });
+  $('manQ').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(manTimer); buscarManual(); $('manQ').blur(); } });
+  $('manIr').addEventListener('click', () => { clearTimeout(manTimer); buscarManual(); });
+
+  // ---- Visor de páginas ----
+  const ruta = (libro, n) => 'manuales/' + libro + '/p' + String(n).padStart(4, '0') + '.webp';
+  async function imagenPagina(libro, n) {
+    const k = ruta(libro, n);
+    if (MAN.urls.has(k)) return MAN.urls.get(k);
+    const cache = await cacheMan();
+    let blob = null;
+    try { const g = cache && await cache.match(k); if (g) blob = await g.blob(); } catch (e) {}
+    if (!blob) {
+      const r = await gh(cfg(), '/contents/' + k, { headers: { 'Accept': 'application/vnd.github.raw' } });
+      if (!r.ok) throw { status: r.status };
+      blob = await r.blob();
+      try { if (cache) await cache.put(k, new Response(blob, { headers: { 'Content-Type': 'image/webp' } })); } catch (e) {}
+    }
+    const url = URL.createObjectURL(blob);
+    MAN.urls.set(k, url);
+    return url;
+  }
+  async function abrirPagina(libro, n) {
+    const info = MAN.indice.libros.find(l => l.id === libro);
+    if (!info) return;
+    n = Math.max(1, Math.min(info.paginas, n));
+    MAN.actual = { libro, n };
+    const pag = MAN.indice.paginas.find(p => p.libro === libro && p.p === n);
+    $('mvLibro').textContent = info.nombre;
+    $('mvPag').textContent = 'Página ' + (pag ? pag.imp : n) + (pag && pag.sec ? ' · ' + pag.sec : '');
+    $('mvAnt').disabled = n <= 1; $('mvSig').disabled = n >= info.paginas;
+    const cuerpo = $('mvCuerpo');
+    if (!$('manVisor').open) $('manVisor').showModal();
+    cuerpo.innerHTML = '<p>Cargando la página…</p>';
+    try {
+      const url = await imagenPagina(libro, n);
+      if (!MAN.actual || MAN.actual.libro !== libro || MAN.actual.n !== n) return;
+      const img = new Image(); img.alt = info.nombre + ', página ' + (pag ? pag.imp : n); img.src = url;
+      cuerpo.innerHTML = ''; cuerpo.appendChild(img); cuerpo.scrollTop = 0; cuerpo.scrollLeft = 0;
+      [n + 1, n - 1].forEach(m => { if (m >= 1 && m <= info.paginas) imagenPagina(libro, m).catch(() => {}); });
+    } catch (e) {
+      cuerpo.innerHTML = '<p>No he podido cargar la página. ' + (e && e.status ? errorTexto(e.status) : 'Revisa la conexión.') + '</p>';
+    }
+  }
+  $('mvAnt').addEventListener('click', () => MAN.actual && abrirPagina(MAN.actual.libro, MAN.actual.n - 1));
+  $('mvSig').addEventListener('click', () => MAN.actual && abrirPagina(MAN.actual.libro, MAN.actual.n + 1));
+  $('mvCerrar').addEventListener('click', () => $('manVisor').close());
+  $('mvZoom').addEventListener('click', () => $('mvCuerpo').classList.toggle('zoom'));
+  // Pasar de página deslizando con el dedo (sin zoom)
+  (() => {
+    let x0 = null, y0 = null;
+    $('mvCuerpo').addEventListener('touchstart', e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive: true });
+    $('mvCuerpo').addEventListener('touchend', e => {
+      if (x0 == null || $('mvCuerpo').classList.contains('zoom')) { x0 = null; return; }
+      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+      if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy) && MAN.actual) abrirPagina(MAN.actual.libro, MAN.actual.n + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+  })();
+
   // ---- Pestañas: Repostaje / Mi Giulia ----
   function vista(v, sinScroll) {
-    v = v === 'car' ? 'car' : 'rep';
+    v = v === 'car' || v === 'man' ? v : 'rep';
     store.set('vista', v);
-    $('vRep').hidden = v !== 'rep'; $('vCar').hidden = v !== 'car';
-    $('titulo').textContent = v === 'car' ? 'Mi Giulia' : 'Repostaje';
+    $('vRep').hidden = v !== 'rep'; $('vCar').hidden = v !== 'car'; $('vMan').hidden = v !== 'man';
+    $('titulo').textContent = v === 'car' ? 'Mi Giulia' : v === 'man' ? 'Manuales' : 'Repostaje';
     $('capBtn').hidden = v !== 'rep';
     document.querySelectorAll('#tabs button').forEach(b => {
       const on = b.dataset.v === v; b.classList.toggle('on', on);
@@ -2172,9 +2475,10 @@
     });
     if (!sinScroll) window.scrollTo(0, 0);
     if (v === 'car') cargarCoche();
+    if (v === 'man') cargarManuales();
   }
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
-  const hashVista = { giulia: 'car', coche: 'car', repostaje: 'rep' }[location.hash.slice(1)];
+  const hashVista = { giulia: 'car', coche: 'car', repostaje: 'rep', manuales: 'man' }[location.hash.slice(1)];
   vista(hashVista || (aj.app.pestana === 'ultima' ? store.get('vista') : aj.app.pestana) || 'rep', true);
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
