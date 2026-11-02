@@ -2223,7 +2223,7 @@
 
   // ---- Buscador de los manuales (sin IA externa: índice propio con raíces de palabras y sinónimos) ----
   const BM = (() => {
-    const VACIAS = new Set(('a al algo ante antes como con contra cual cuando de del desde donde durante e el ella ellos en entre era es esa ese eso esta este esto estos fue ha hace hacer hay la las le les lo los mas me mi mis muy ni no nos o os otra otro para pero poco por porque puede pueden que quien se sea segun ser si sin sobre solo son su sus tambien tanto te tengo tiene tienen todo todos tu un una uno unos y ya yo cómo como hago hacer debo deber quiero puedo funciona'
+    const VACIAS = new Set(('a al algo ante antes como con contra cual cuando de del desde donde durante e el ella ellos en entre era es esa ese eso esta este esto estos fue ha hace hacer hay la las le les lo los mas me mi mis muy ni no nos o os otra otro para pero poco por porque puede pueden que quien se sea segun ser si sin sobre solo son su sus tambien tanto te tengo tiene tienen todo todos tu un una uno unos y ya yo cómo como hago hacer debo deber quiero puedo funciona cambiar ajustar configurar modificar establecer regular'
       ).split(' ').map(w => w.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
     // Palabras que la gente usa y el manual dice de otra forma (se comparan por raíz)
     const SINONIMOS = [
