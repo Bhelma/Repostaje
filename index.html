@@ -356,6 +356,21 @@
   .car-btns button:disabled { opacity: .4; color: var(--ink); background: none; }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 
+  /* Repostar / Mis viajes */
+  .subtabs { display: flex; gap: 4px; padding: 4px; margin: 0 0 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+  .subtabs button { flex: 1; font: inherit; font-weight: 700; font-size: 1rem; border: 0; background: none; color: var(--muted); padding: 9px 0; border-radius: 10px; cursor: pointer; }
+  .subtabs button.on { background: var(--red); color: #fff; }
+  .vj-lista { list-style: none; margin: 6px 0 0; padding: 0; }
+  .vj-dia { color: var(--muted); font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; margin: 14px 0 4px; }
+  .vj-dia:first-child { margin-top: 2px; }
+  .vj-item { display: block; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 8px; cursor: pointer; }
+  .vj-item .l1 { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 1.12rem; font-variant-numeric: tabular-nums; }
+  .vj-item .l2 { color: var(--ink); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vj-item .l3 { color: var(--muted); font-size: .92rem; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .vj-mapa { height: 280px; border-radius: 12px; background: var(--bg); overflow: hidden; z-index: 0; }
+  dialog.vj { width: min(560px, 100vw - 16px); }
+  .vj-ok { color: var(--ink); }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -414,6 +429,11 @@
   </header>
 
   <div id="vRep">
+  <div class="subtabs" id="repTabs" role="tablist" aria-label="Repostaje">
+    <button type="button" class="on" data-s="repostar" role="tab" aria-selected="true">Repostar</button>
+    <button type="button" data-s="viajes" role="tab" aria-selected="false">Mis viajes</button>
+  </div>
+  <div id="sRepostar">
   <section class="gauge" aria-live="polite">
     <div class="big"><span class="num" id="litros">0,00</span><span class="unit">litros</span></div>
     <p class="sub" id="pctLine">Introduce el precio y el importe</p>
@@ -550,6 +570,24 @@
       </div>
     </div>
   </section>
+  </div>
+
+  <div id="sViajes" hidden>
+    <section class="near">
+      <div class="near-head"><h2>Mis viajes</h2><button type="button" class="link-btn" id="vjRefrescar">Actualizar</button></div>
+      <p class="near-meta" id="vjEstado"></p>
+      <div class="row2" style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" class="near-btn" id="vjEmpezar" hidden>Empezar viaje</button>
+        <button type="button" class="near-btn ghost" id="vjTerminar" hidden>Terminar viaje</button>
+      </div>
+      <div class="car-grid" id="vjResumen"></div>
+    </section>
+    <section class="near">
+      <div class="near-head"><h2>Trayectos</h2></div>
+      <p class="near-meta" id="vjPrecios"></p>
+      <div class="vj-lista" id="vjLista"></div>
+    </section>
+  </div>
   </div>
 
   <div id="vCar" hidden>
@@ -726,6 +764,17 @@
     <p class="tip">Si la clave caduca, la app lo avisa en rojo: genera otra y vuelve al paso 3. Si pierdes el móvil, bórrala en la misma pantalla de GitHub donde la creaste.</p>
   </details>
   <details>
+    <summary>Mis viajes</summary>
+    <p>En <b>Repostaje → Mis viajes</b> aparecen tus trayectos con la hora de salida y de llegada, los km, lo que te ha costado el gasóleo y la ruta en el mapa (toca un viaje para verla).</p>
+    <ul>
+      <li><b>Se registran solos</b> con la app Android: al conectar el móvil al Bluetooth del Giulia empieza el viaje; al desconectarse, termina (con 90 segundos de margen por si es un corte).</li>
+      <li>Actívalo en <b>Ajustes → Mis viajes</b>, con el mismo Bluetooth que elegiste para la vigilancia. Android pedirá la ubicación: elige <b>«Permitir todo el tiempo»</b>, si no, no puede registrar con la app cerrada.</li>
+      <li>El <b>coste</b> se calcula con tu consumo medio (de tus repostajes) y dos precios: el de tu último depósito y tu precio medio pagado. Es una estimación: el coche no informa del gasóleo de cada trayecto.</li>
+      <li>El GPS solo funciona mientras conduces, con una notificación «Viaje en curso». Si tu móvil es Samsung, pon Mi Giulia en <b>Ajustes de Android → Batería → Sin restricciones</b> para que no lo corte.</li>
+      <li>Los viajes se guardan en tu repositorio privado (<code>viajes.json</code> y la carpeta <code>viajes/rutas</code>).</li>
+    </ul>
+  </details>
+  <details>
     <summary>Mi Giulia: datos y mando a distancia</summary>
     <p>Está en la pestaña <b>Mi Giulia</b>, abajo. Los datos salen de los servicios conectados de Alfa (los mismos que ves en My Remote). Un proceso en tu repositorio privado los lee cada 3 horas y los deja en <code>coche.json</code>; la app los muestra aquí.</p>
     <ul>
@@ -840,6 +889,20 @@
   <div class="dlg-actions">
     <button type="button" id="ajCancel">Cancelar</button>
     <button type="button" class="primary" id="ajSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="vjDlg" class="sheet vj">
+  <h2 id="vjTit">Viaje</h2>
+  <p class="aj-estado" id="vjSub"></p>
+  <div class="mapa-box">
+    <div id="vjMapa" class="vj-mapa"></div>
+    <div class="mapa-tipo" id="vjTipo" role="group" aria-label="Tipo de mapa"><button type="button" data-v="m">Mapa</button><button type="button" data-v="k">Satélite</button></div>
+  </div>
+  <ul class="kv" id="vjDatos"></ul>
+  <div class="dlg-actions">
+    <button type="button" id="vjBorrar">Borrar viaje</button>
+    <button type="button" class="primary" id="vjCerrar">Cerrar</button>
   </div>
 </dialog>
 
@@ -2536,8 +2599,8 @@
     // Abierta desde un widget
     MG.escuchar('accion', d => {
       const a = d && d.accion;
-      if (a === 'repostar') { vista('rep'); setTimeout(() => { try { $('importe').focus(); } catch (e) {} }, 300); }
-      else if (a === 'gasolineras') { vista('rep'); setTimeout(() => { try { $('nearBtn').scrollIntoView({ block: 'center' }); $('nearBtn').click(); } catch (e) {} }, 300); }
+      if (a === 'repostar') { vista('rep'); subVista('repostar'); setTimeout(() => { try { $('importe').focus(); } catch (e) {} }, 300); }
+      else if (a === 'gasolineras') { vista('rep'); subVista('repostar'); setTimeout(() => { try { $('nearBtn').scrollIntoView({ block: 'center' }); $('nearBtn').click(); } catch (e) {} }, 300); }
       else if (a === 'coche') vista('car');
     });
 
@@ -2586,6 +2649,226 @@
     });
     pintarBt();
   }
+
+  // ---- Mis viajes ----
+  let viajes = [], viajesT = 0, vjNat = null, vjActual = null;
+  try { viajes = JSON.parse(store.get('viajesCache')) || []; } catch (e) {}
+  function subVista(sv) {
+    sv = sv === 'viajes' ? 'viajes' : 'repostar';
+    store.set('subRep', sv);
+    $('sRepostar').hidden = sv !== 'repostar'; $('sViajes').hidden = sv !== 'viajes';
+    document.querySelectorAll('#repTabs button').forEach(b => { const on = b.dataset.s === sv; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    if (sv === 'viajes') { pintarViajes(); cargarViajes(); }
+  }
+  $('repTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) subVista(b.dataset.s); });
+
+  // Precio de referencia y consumo: de tus repostajes
+  function preciosViaje() {
+    const arr = leer().filter(x => x.precio > 0 && x.litros > 0).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const ul = arr.length ? arr[arr.length - 1] : null;
+    const litros = arr.reduce((t, x) => t + x.litros, 0), euros = arr.reduce((t, x) => t + x.importe, 0);
+    const c = consumo(leer());
+    return { ultimo: ul ? ul.precio : null, media: litros > 0 ? euros / litros : null, consumo: c || 6.0, consumoReal: !!c };
+  }
+  const costeDe = (v, pr) => { const l = (v.km || 0) * pr.consumo / 100; return { litros: l, ultimo: pr.ultimo ? l * pr.ultimo : null, media: pr.media ? l * pr.media : null }; };
+  const horaDe = iso => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const durTxt = min => min >= 60 ? Math.floor(min / 60) + ' h ' + String(Math.round(min % 60)).padStart(2, '0') + ' min' : Math.round(min) + ' min';
+
+  async function cargarViajes(forzar) {
+    if (!forzar && Date.now() - viajesT < 20000) return;
+    viajesT = Date.now();
+    const porId = new Map(viajes.map(v => [v.id, v]));
+    let borrados = [];
+    if (cfg()) { try { const r = await leerRepo('viajes.json'); if (r.datos) { porId.clear(); (r.datos.viajes || []).forEach(v => porId.set(v.id, v)); } } catch (e) {} }
+    if (MG) {
+      try { const l = await MG.llamar('leerViajes'); (l.viajes || []).forEach(v => porId.set(v.id, v)); borrados = l.borrar || []; } catch (e) {}
+      try { vjNat = await MG.llamar('estadoViajes'); } catch (e) {}
+    }
+    borrados.forEach(id => porId.delete(id));
+    viajes = [...porId.values()].filter(v => v && v.id && v.inicio).sort((a, b) => b.inicio.localeCompare(a.inicio));
+    store.set('viajesCache', JSON.stringify(viajes.slice(0, 400)));
+    pintarViajes();
+  }
+
+  function pintarViajes() {
+    const pr = preciosViaje(), n = vjNat;
+    // Estado del registro
+    let t;
+    if (!MG) t = 'Los viajes los registra la app Android de Mi Giulia. Aquí ves los que ya se han guardado.';
+    else if (n && n.grabando) t = 'Viaje en curso desde las ' + horaDe(new Date(n.inicio).toISOString()) + '. Se guarda solo al desconectarte del coche, o pulsa «Terminar viaje».';
+    else if (n && n.auto) t = 'Se registran solos al conectar con «' + (n.bt || 'el coche') + '».' + (n.permisoFondo ? '' : ' ⚠ Falta permitir la ubicación «todo el tiempo»: ve a Ajustes → Mis viajes.');
+    else t = 'Para que se registren solos, ve a Ajustes → Mis viajes. También puedes empezar uno a mano.';
+    $('vjEstado').textContent = t;
+    $('vjEstado').className = 'near-meta' + (n && n.auto && !n.permisoFondo ? ' car-warn' : '');
+    $('vjEmpezar').hidden = !MG || !!(n && n.grabando);
+    $('vjTerminar').hidden = !MG || !(n && n.grabando);
+    $('vjRefrescar').hidden = !cfg() && !MG;
+
+    // Resumen del mes
+    const ahora = new Date();
+    const delMes = viajes.filter(v => { const d = new Date(v.inicio); return d.getFullYear() === ahora.getFullYear() && d.getMonth() === ahora.getMonth(); });
+    const kmMes = delMes.reduce((s, v) => s + (v.km || 0), 0);
+    const eurMes = delMes.reduce((s, v) => s + (costeDe(v, pr).ultimo || 0), 0);
+    const res = $('vjResumen'); res.innerHTML = '';
+    if (viajes.length) {
+      res.append(tarjeta('Este mes', nf(kmMes, kmMes < 100 ? 1 : 0) + ' km', delMes.length === 1 ? '1 viaje' : delMes.length + ' viajes'));
+      res.append(tarjeta('Gasóleo del mes', pr.ultimo ? eur(eurMes) : '–', pr.ultimo ? 'con el precio del último depósito' : 'guarda un repostaje para calcularlo'));
+    }
+    $('vjPrecios').textContent = viajes.length
+      ? 'Coste estimado con tu consumo ' + (pr.consumoReal ? 'medio de ' : 'aproximado de ') + nf(pr.consumo, 1) + ' L/100 km' +
+        (pr.ultimo ? ', a ' + nf(pr.ultimo, 3) + ' €/L (último depósito)' : '') + (pr.media ? ' y a ' + nf(pr.media, 3) + ' €/L (tu precio medio).' : '.')
+      : '';
+
+    // Lista por días
+    const box = $('vjLista'); box.innerHTML = '';
+    if (!viajes.length) { box.append(el('p', 'near-meta', MG ? 'Aún no hay viajes. Aparecerán aquí en cuanto hagas el primero.' : 'Aún no hay viajes guardados.')); return; }
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    let diaPrev = '';
+    viajes.slice(0, 200).forEach(v => {
+      const d = new Date(v.inicio), d0 = new Date(d); d0.setHours(0, 0, 0, 0);
+      const dias = Math.round((hoy - d0) / 864e5);
+      const dia = dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+      if (dia !== diaPrev) { box.append(el('div', 'vj-dia', dia)); diaPrev = dia; }
+      const c = costeDe(v, pr);
+      const b = el('button', 'vj-item'); b.type = 'button';
+      const l1 = el('div', 'l1'); l1.append(el('span', null, horaDe(v.inicio) + ' → ' + horaDe(v.fin)), el('span', null, nf(v.km, v.km < 100 ? 1 : 0) + ' km'));
+      const ruta = v.origen && v.destino ? v.origen.split(',').pop().trim() + ' → ' + v.destino.split(',').pop().trim() : (v.destino || v.origen || 'Viaje de ' + durTxt(v.min || 0));
+      const costes = [c.ultimo != null ? eur(c.ultimo) + ' (último depósito)' : null, c.media != null ? eur(c.media) + ' (precio medio)' : null].filter(Boolean).join(' · ');
+      b.append(l1, el('div', 'l2', ruta), el('div', 'l3', durTxt(v.min || 0) + (costes ? ' · ' + costes : '')));
+      b.addEventListener('click', () => abrirViaje(v));
+      box.append(b);
+    });
+  }
+
+  // Detalle con la ruta en el mapa
+  let leafletP = null, vjMapa = null, vjCapa = null;
+  const vjCapas = {};
+  function cargarLeaflet() {
+    if (window.L && window.L.map) return Promise.resolve();
+    if (!leafletP) leafletP = new Promise((ok, mal) => {
+      const css = document.createElement('link'); css.rel = 'stylesheet';
+      css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+      const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      sc.onload = ok; sc.onerror = () => { leafletP = null; mal(new Error('mapa')); }; document.head.appendChild(sc);
+    });
+    return leafletP;
+  }
+  async function rutaDe(v) {
+    if (MG) { try { const r = await MG.llamar('leerRuta', { id: v.id }); if (r && r.ruta && r.ruta.length) return r.ruta; } catch (e) {} }
+    if (cfg()) { try { const r = await leerRepo('viajes/rutas/' + v.id + '.json'); if (r.datos && r.datos.ruta) return r.datos.ruta; } catch (e) {} }
+    return null;
+  }
+  function tipoMapa(tp) {
+    if (!vjMapa) return;
+    Object.keys(vjCapas).forEach(k => { if (k !== tp && vjMapa.hasLayer(vjCapas[k])) vjMapa.removeLayer(vjCapas[k]); });
+    if (!vjMapa.hasLayer(vjCapas[tp])) vjCapas[tp].addTo(vjMapa);
+    document.querySelectorAll('#vjTipo button').forEach(b => b.classList.toggle('on', b.dataset.v === tp));
+  }
+  $('vjTipo').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; store.set('mapaTipo', b.dataset.v); tipoMapa(b.dataset.v); });
+
+  async function abrirViaje(v) {
+    vjActual = v;
+    const pr = preciosViaje(), c = costeDe(v, pr);
+    const o = v.origen || '', d = v.destino || '';
+    $('vjTit').textContent = o && d ? o.split(',').pop().trim() + ' → ' + d.split(',').pop().trim() : 'Viaje';
+    $('vjSub').textContent = new Date(v.inicio).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const ul = $('vjDatos'); ul.innerHTML = '';
+    fila(ul, 'Salida', horaDe(v.inicio) + (o ? ', ' + o : ''));
+    fila(ul, 'Llegada', horaDe(v.fin) + (d ? ', ' + d : ''));
+    fila(ul, 'Duración', durTxt(v.min || 0) + (v.minMarcha != null && v.minMarcha < (v.min || 0) ? ' (' + durTxt(v.minMarcha) + ' en marcha)' : ''));
+    fila(ul, 'Distancia', nf(v.km, 1) + ' km');
+    if (v.vmedia) fila(ul, 'Velocidad media en marcha', nf(v.vmedia, 0) + ' km/h');
+    if (v.vmax) fila(ul, 'Velocidad máxima', nf(v.vmax, 0) + ' km/h');
+    fila(ul, 'Gasóleo estimado', nf(c.litros, 2) + ' L (' + nf(pr.consumo, 1) + ' L/100 km' + (pr.consumoReal ? ', tu media' : ', aproximado') + ')');
+    fila(ul, 'Coste (último depósito)', c.ultimo != null ? eur(c.ultimo) + ' a ' + nf(pr.ultimo, 3) + ' €/L' : 'sin repostajes guardados');
+    fila(ul, 'Coste (precio medio)', c.media != null ? eur(c.media) + ' a ' + nf(pr.media, 3) + ' €/L' : 'sin repostajes guardados');
+    $('vjBorrar').hidden = !MG;
+    $('vjDlg').showModal();
+    const caja = $('vjMapa');
+    try { await cargarLeaflet(); } catch (e) { caja.textContent = 'No se ha podido cargar el mapa. Revisa la conexión.'; return; }
+    if (!vjMapa) {
+      vjMapa = window.L.map(caja, { zoomControl: true });
+      vjCapas.m = window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+      vjCapas.k = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagen © Esri' });
+    }
+    tipoMapa(store.get('mapaTipo') === 'k' ? 'k' : 'm');
+    if (vjCapa) { vjCapa.remove(); vjCapa = null; }
+    const ruta = await rutaDe(v);
+    const pts = ruta && ruta.length > 1 ? ruta : [v.desde, v.hasta].filter(p => p && p.length === 2);
+    if (vjActual !== v || !pts.length) return;
+    const rojo = getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#B8141E';
+    vjCapa = window.L.layerGroup().addTo(vjMapa);
+    const linea = window.L.polyline(pts, { color: rojo, weight: 5, opacity: .9, dashArray: ruta && ruta.length > 1 ? null : '6 8' }).addTo(vjCapa);
+    window.L.circleMarker(pts[0], { radius: 7, color: '#fff', weight: 2, fillColor: '#2E7D32', fillOpacity: 1 }).bindTooltip('Salida ' + horaDe(v.inicio)).addTo(vjCapa);
+    window.L.circleMarker(pts[pts.length - 1], { radius: 7, color: '#fff', weight: 2, fillColor: rojo, fillOpacity: 1 }).bindTooltip('Llegada ' + horaDe(v.fin)).addTo(vjCapa);
+    setTimeout(() => { vjMapa.invalidateSize(); vjMapa.fitBounds(linea.getBounds(), { padding: [26, 26], maxZoom: 16 }); }, 80);
+  }
+  $('vjCerrar').addEventListener('click', () => $('vjDlg').close());
+  $('vjBorrar').addEventListener('click', async () => {
+    if (!vjActual || !MG || !confirm('¿Borrar este viaje? También se quita de tu copia en GitHub.')) return;
+    try { await MG.llamar('borrarViaje', { id: vjActual.id }); } catch (e) { alert(e.message || e); return; }
+    viajes = viajes.filter(x => x.id !== vjActual.id);
+    store.set('viajesCache', JSON.stringify(viajes.slice(0, 400)));
+    $('vjDlg').close(); pintarViajes();
+  });
+  $('vjRefrescar').addEventListener('click', () => { if (MG) MG.llamar('subirViajes').catch(() => {}); cargarViajes(true); });
+
+  if (MG) {
+    const ign = () => {};
+    $('vjEmpezar').addEventListener('click', async () => {
+      try {
+        const st = await MG.llamar('permisosViajes');
+        if (!st.permisoGps) { $('vjEstado').textContent = 'Sin permiso de ubicación no puedo registrar el viaje.'; return; }
+        await MG.llamar('iniciarViaje');
+      } catch (e) { $('vjEstado').textContent = 'No se ha podido empezar: ' + (e.message || e); return; }
+      setTimeout(() => cargarViajes(true), 1200);
+    });
+    $('vjTerminar').addEventListener('click', async () => {
+      $('vjEstado').textContent = 'Guardando el viaje…';
+      try { await MG.llamar('terminarViaje'); } catch (e) {}
+      setTimeout(() => cargarViajes(true), 3500);
+      setTimeout(() => cargarViajes(true), 9000);
+    });
+    MG.escuchar('accion', d => {
+      const a = d && d.accion;
+      if (a === 'viajes') { vista('rep'); subVista('viajes'); }
+      else if (a === 'viajes_cambiados') cargarViajes(true);
+    });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !$('sViajes').hidden) cargarViajes(true); });
+
+    // Ajustes → Mis viajes (usa el mismo Bluetooth que la vigilancia)
+    const caja = document.querySelector('.bt-auto');
+    if (caja) {
+      const dv = document.createElement('div');
+      dv.innerHTML = '<h3>Mis viajes</h3><p class="aj-estado" id="vjAjEstado"></p>' +
+        '<label class="chk"><input type="checkbox" id="vjAuto"> Registrar mis viajes al conectar con el Bluetooth del coche (el elegido arriba)</label>' +
+        '<button type="button" class="near-btn ghost" id="vjPermisos" style="margin-top:8px">Revisar permisos de ubicación</button>';
+      caja.appendChild(dv);
+      const pintarVjAj = (st, msg) => {
+        if (!st) return;
+        vjNat = st;
+        $('vjAuto').checked = !!st.auto;
+        $('vjAjEstado').textContent = msg || (!st.permisoGps ? 'Falta el permiso de ubicación.'
+          : !st.permisoFondo ? 'Falta «Permitir todo el tiempo» en la ubicación de Mi Giulia: sin eso no puede registrar con la app cerrada. Pulsa «Revisar permisos».'
+          : st.auto ? 'Activo con «' + (st.bt || 'el coche') + '». El GPS solo se usa mientras conduces.'
+          : 'Marca la casilla para que los viajes se registren solos.');
+        pintarViajes();
+      };
+      MG.llamar('estadoViajes').then(st => pintarVjAj(st)).catch(ign);
+      $('vjPermisos').addEventListener('click', () => MG.llamar('permisosViajes').then(st => pintarVjAj(st)).catch(ign));
+      $('vjAuto').addEventListener('change', async () => {
+        const quiere = $('vjAuto').checked;
+        if (quiere) {
+          let bt = null; try { bt = await MG.llamar('estadoBluetooth'); } catch (e) {}
+          if (!bt || !bt.direccion) { $('vjAuto').checked = false; $('vjAjEstado').textContent = 'Primero elige arriba el Bluetooth del coche.'; return; }
+          try { await MG.llamar('permisosViajes'); } catch (e) {}
+        }
+        MG.llamar('configurarViajes', { auto: quiere }).then(st => pintarVjAj(st)).catch(ign);
+      });
+    }
+  }
+  subVista(store.get('subRep') || 'repostar');
+
 
   render();
 })();
