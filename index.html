@@ -371,6 +371,32 @@
   dialog.vj { width: min(560px, 100vw - 16px); }
   .vj-ok { color: var(--ink); }
 
+  /* Mantenimiento */
+  #carTabs { margin-bottom: 10px; }
+  .mt-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 8px; cursor: pointer; }
+  .mt-item.auto { cursor: default; }
+  .mt-item .mt-txt { flex: 1; min-width: 0; }
+  .mt-item b { display: block; font-size: 1.08rem; }
+  .mt-item span { display: block; color: var(--muted); font-size: .92rem; }
+  .mt-falta { flex: none; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mt-falta.aviso { color: var(--warn); }
+  .mt-falta.urge { color: var(--red); }
+  .mt-hecha { margin-top: 6px; }
+  .mt-lib { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 10px 2px; cursor: pointer; }
+  .mt-lib b { font-size: 1.04rem; }
+  .mt-lib .pr { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .mt-lib span { color: var(--muted); font-size: .92rem; grid-column: 1 / -1; }
+  .ed-grid select, .ed-grid textarea { width: 100%; font: inherit; font-size: 1.05rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .ed-grid textarea { min-height: 64px; resize: vertical; }
+
+  .graf-caja { margin-top: 8px; }
+  .graf { width: 100%; height: auto; display: block; }
+  .g-lin { stroke: var(--line); stroke-width: 1; }
+  .g-guia { stroke: var(--warn); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .g-txt { fill: var(--muted); font: 600 11px "Barlow Semi Condensed", sans-serif; }
+  .graf-ley { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; color: var(--muted); font-size: .9rem; }
+  .graf-ley i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -620,6 +646,11 @@
   </div>
 
   <div id="vCar" hidden>
+    <div class="subtabs" id="carTabs" role="tablist" aria-label="Mi Giulia">
+      <button type="button" class="on" data-s="estado" role="tab" aria-selected="true">Mi coche</button>
+      <button type="button" data-s="mant" role="tab" aria-selected="false">Mantenimiento</button>
+    </div>
+    <div id="sEstado">
     <section class="hero" aria-label="Resumen del coche">
       <div class="hero-foto"><img src="icons/giulia.webp" alt="Tu Alfa Romeo Giulia gris" width="1000" height="539" decoding="async"></div>
       <div class="hero-datos">
@@ -649,6 +680,21 @@
       <p class="near-meta car-orden" id="carOrden"></p>
     </section>
     <div id="carBottom"></div>
+    </div>
+
+    <div id="sMant" hidden>
+      <section class="near">
+        <div class="near-head"><h2>Próximas fechas</h2><button type="button" class="link-btn" id="mtAddFecha">Añadir</button></div>
+        <p class="near-meta" id="mtFechasMeta"></p>
+        <div id="mtFechas"></div>
+      </section>
+      <section class="near">
+        <div class="near-head"><h2>Libro de mantenimiento</h2><button type="button" class="link-btn" id="mtAddLibro">Añadir</button></div>
+        <div class="car-grid" id="mtResumen"></div>
+        <div id="mtLibro"></div>
+        <p class="near-meta" id="mtSync"></p>
+      </section>
+    </div>
   </div>
 
   <div id="vMan" hidden>
@@ -817,6 +863,16 @@
     </ul>
   </details>
   <details>
+    <summary>Mantenimiento: calendario y libro</summary>
+    <p>En <b>Mi Giulia → Mantenimiento</b>.</p>
+    <ul>
+      <li><b>Próximas fechas</b>: ITV, seguro, impuesto y lo que quieras. Te avisa con una notificación los días que elijas antes, a una semana y el mismo día. Si se repite (la ITV cada 2 años, el seguro cada año), al marcarla como hecha pasa sola a la siguiente.</li>
+      <li>También aparecen, sin hacer nada, el próximo <b>cambio de aceite</b> y la <b>revisión oficial</b> que pide el coche.</li>
+      <li><b>Libro de mantenimiento</b>: apunta cada cambio, revisión o reparación con fecha, km, taller y precio. Al apuntar un cambio de aceite se fija solo el siguiente; al apuntar la ITV, pasa a la siguiente fecha.</li>
+      <li>Se guarda en tu repositorio privado (<code>mantenimiento.json</code>).</li>
+    </ul>
+  </details>
+  <details>
     <summary>Mis viajes</summary>
     <p>En <b>Repostaje → Mis viajes</b> aparecen tus trayectos con la hora de salida y de llegada, los km, lo que te ha costado el gasóleo y la ruta en el mapa (toca un viaje para verla).</p>
     <ul>
@@ -913,6 +969,8 @@
     <label class="chk"><input type="checkbox" id="avBat"> Batería 12 V por debajo de <input id="avBatV" class="mini" type="text" inputmode="decimal"> V</label>
     <label class="chk"><input type="checkbox" id="avRev"> Revisión oficial a menos de <input id="avRevKm" class="mini" type="text" inputmode="numeric"> km</label>
     <label class="chk"><input type="checkbox" id="avErr"> Si no puedo leer el coche en unas 12 horas</label>
+    <label class="chk"><input type="checkbox" id="avTend"> Posible pinchazo lento y batería de 12 V que se va agotando (según el historial)</label>
+    <label class="chk"><input type="checkbox" id="avCal"> Calendario del coche: ITV, seguro, impuesto y tus fechas (aviso antes, a una semana y el día)</label>
   </div>
   <div class="ed-grid" style="margin-top:12px">
     <label class="full"><span>Radio de la vigilancia (metros)</span><input id="ajVigRadio" type="text" inputmode="numeric" autocomplete="off"></label>
@@ -956,6 +1014,46 @@
   <div class="dlg-actions">
     <button type="button" id="vjBorrar">Borrar viaje</button>
     <button type="button" class="primary" id="vjCerrar">Cerrar</button>
+  </div>
+</dialog>
+
+<dialog id="mtFechaDlg" class="sheet">
+  <h2 id="mtFechaTit">Fecha</h2>
+  <div class="ed-grid">
+    <label class="full"><span>Qué es</span><select id="mfTipo"><option value="itv">ITV</option><option value="seguro">Seguro</option><option value="impuesto">Impuesto de circulación</option><option value="otro">Otra cosa</option></select></label>
+    <label class="full" id="mfNombreL"><span>Nombre</span><input id="mfNombre" type="text" autocomplete="off" placeholder="Por ejemplo: cambiar escobillas"></label>
+    <label class="full"><span>Fecha</span><input id="mfFecha" type="date"></label>
+    <label><span>Se repite cada</span><select id="mfRep"><option value="0">No se repite</option><option value="6">6 meses</option><option value="12">1 año</option><option value="24">2 años</option></select></label>
+    <label><span>Avisar (días antes)</span><input id="mfAvisar" type="text" inputmode="numeric" autocomplete="off"></label>
+    <label class="full"><span>Notas</span><textarea id="mfNotas" placeholder="Compañía, número de póliza, estación de ITV…"></textarea></label>
+  </div>
+  <p class="aj-estado" id="mfMsg"></p>
+  <div class="dlg-actions">
+    <button type="button" id="mfBorrar">Borrar</button>
+    <button type="button" id="mfCancel">Cancelar</button>
+    <button type="button" class="primary" id="mfGuardar">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="mtLibroDlg" class="sheet">
+  <h2 id="mtLibroTit">Mantenimiento</h2>
+  <div class="ed-grid">
+    <label class="full"><span>Qué se ha hecho</span><select id="mlTipo">
+      <option value="aceite">Cambio de aceite y filtro</option><option value="filtros">Filtros (aire, habitáculo, gasoil)</option>
+      <option value="neumaticos">Neumáticos</option><option value="frenos">Pastillas o discos de freno</option>
+      <option value="adblue">AdBlue</option><option value="bateria">Batería</option><option value="revision">Revisión oficial</option>
+      <option value="itv">ITV</option><option value="reparacion">Reparación</option><option value="otro">Otro</option></select></label>
+    <label><span>Fecha</span><input id="mlFecha" type="date"></label>
+    <label><span>Kilómetros</span><input id="mlKm" type="text" inputmode="numeric" autocomplete="off"></label>
+    <label><span>Taller o sitio</span><input id="mlTaller" type="text" autocomplete="off"></label>
+    <label><span>Precio (€)</span><input id="mlPrecio" type="text" inputmode="decimal" autocomplete="off"></label>
+    <label class="full"><span>Notas</span><textarea id="mlNotas" placeholder="Aceite usado, referencias, garantía…"></textarea></label>
+  </div>
+  <p class="aj-estado" id="mlMsg"></p>
+  <div class="dlg-actions">
+    <button type="button" id="mlBorrar">Borrar</button>
+    <button type="button" id="mlCancel">Cancelar</button>
+    <button type="button" class="primary" id="mlGuardar">Guardar</button>
   </div>
 </dialog>
 
@@ -1855,6 +1953,42 @@
     return d;
   }
 
+  // Lecturas de los últimos 30 días (coche-historial.json) que cumplen una condición
+  function historia30(cond) {
+    const desde = Date.now() - 30 * 864e5;
+    return ((cocheHist && cocheHist.registros) || []).filter(r => r && r.t && new Date(r.t).getTime() >= desde && cond(r));
+  }
+  // Gráfica de líneas sencilla en SVG: series = [{nombre, puntos: [[t, valor], …]}]
+  function grafica(series, dec, unidad, guias) {
+    const W = 340, H = 150, ml = 38, mr = 8, mt = 8, mb = 22;
+    const todos = series.flatMap(s => s.puntos);
+    let y0 = Math.min(...todos.map(p => p[1]), ...(guias || [])), y1 = Math.max(...todos.map(p => p[1]), ...(guias || []));
+    if (y1 - y0 < 0.2) { y0 -= 0.1; y1 += 0.1; }
+    const pad = (y1 - y0) * 0.12; y0 -= pad; y1 += pad;
+    const x0 = Math.min(...todos.map(p => p[0])), x1 = Math.max(...todos.map(p => p[0])) || x0 + 1;
+    const X = t => ml + (W - ml - mr) * (x1 === x0 ? 0.5 : (t - x0) / (x1 - x0)), Y = v => mt + (H - mt - mb) * (1 - (v - y0) / (y1 - y0));
+    const colores = ['var(--red)', '#1E88E5', '#F9A825', '#43A047'];
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="graf" role="img" aria-label="Gráfica">';
+    [y0 + pad, (y0 + y1) / 2, y1 - pad].forEach(v => {
+      svg += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" class="g-lin"/><text x="' + (ml - 4) + '" y="' + (Y(v) + 4).toFixed(1) + '" class="g-txt" text-anchor="end">' + nf(v, dec) + '</text>';
+    });
+    (guias || []).forEach(v => { svg += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" class="g-guia"/>'; });
+    const dia = t => new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    svg += '<text x="' + ml + '" y="' + (H - 6) + '" class="g-txt">' + dia(x0) + '</text><text x="' + (W - mr) + '" y="' + (H - 6) + '" class="g-txt" text-anchor="end">' + dia(x1) + '</text>';
+    series.forEach((s, i) => {
+      const pts = s.puntos.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
+      svg += '<polyline points="' + pts + '" fill="none" stroke="' + colores[i % 4] + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+    });
+    svg += '</svg>';
+    const caja = el('div', 'graf-caja'); caja.innerHTML = svg;
+    if (series.length > 1) {
+      const ley = el('div', 'graf-ley');
+      series.forEach((s, i) => { const it = el('span'); it.innerHTML = '<i style="background:' + colores[i % 4] + '"></i>'; it.append(s.nombre + ' ' + nf(s.puntos[s.puntos.length - 1][1], dec) + unidad); ley.append(it); });
+      caja.append(ley);
+    }
+    return caja;
+  }
+
   function pintarCoche() {
     const body = $('carTop'), mid = $('carMid'), bot = $('carBottom'), meta = $('carMeta');
     body.innerHTML = ''; mid.innerHTML = ''; bot.innerHTML = '';
@@ -1898,13 +2032,32 @@
       });
       sn.append(t);
       if (nm.some(n => n.aviso || (n.estado && n.estado !== 'NORMAL'))) sn.append(el('p', 'car-warn', 'El coche avisa de presión anómala en algún neumático.'));
+      const hn = historia30(r => Array.isArray(r.n) && r.n.every(x => x != null));
+      if (hn.length >= 3) {
+        sn.append(el('h3', 'car-h3', 'Últimos 30 días'));
+        sn.append(grafica(['Del. izq.', 'Del. dcha.', 'Tras. izq.', 'Tras. dcha.'].map((nombre, i) => ({ nombre, puntos: hn.map(r => [new Date(r.t).getTime(), r.n[i]]) })), 2, ' bar'));
+        sn.append(el('p', 'near-meta', 'Las cuatro suben y bajan a la vez con el frío y el calor; si una se separa de las demás y sigue bajando, te aviso de un posible pinchazo lento.'));
+      } else sn.append(el('p', 'near-meta', 'La gráfica de presiones aparecerá cuando haya unos días de lecturas guardadas.'));
+    }
+    const hv = historia30(r => typeof r.v === 'number' && r.v < 13);   // solo con el coche parado
+    if (hv.length >= 3) {
+      const sb = panel(mid, 'Batería 12 V');
+      sb.append(el('p', 'near-meta', 'Tensión con el coche parado, últimos 30 días.'));
+      sb.append(grafica([{ nombre: 'Tensión', puntos: hv.map(r => [new Date(r.t).getTime(), r.v]) }], 1, ' V', [12.2]));
+      sb.append(el('p', 'near-meta', 'Una batería sana marca unos 12,4–12,7 V con el coche parado. La línea discontinua marca 12,2 V: si va bajando hacia ella, te aviso.'));
     }
 
     // Ubicación
-    const u = coche.ubicacion;
+    let u = coche.ubicacion, deMovil = false;
+    try {
+      const vu = (JSON.parse(store.get('viajesCache')) || []).find(v => v && v.hasta && v.hasta.length === 2 && v.fin);
+      if (vu && (!u || u.lat == null || !u.hora || new Date(vu.fin) > new Date(u.hora))) { u = { lat: vu.hasta[0], lon: vu.hasta[1], hora: vu.fin }; deMovil = true; }
+    } catch (e) {}
     if (u && u.lat != null && u.lon != null) {
       const su = panel(mid, 'Dónde lo aparcaste');
-      su.append(el('p', 'near-meta', 'Última posición que envió el coche' + (u.aproximada ? ' (aproximada)' : '') + ', ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
+      su.append(el('p', 'near-meta', deMovil
+        ? 'Posición exacta de tu móvil al terminar el último viaje, ' + cuando(u.hora) + '.' + (coche.ubicacion && coche.ubicacion.hora ? ' La del coche (Alfa) es de ' + cuando(coche.ubicacion.hora).replace(/ \(.*\)$/, '') + '.' : '')
+        : 'Última posición que envió el coche' + (u.aproximada ? ' (aproximada)' : '') + ', ' + cuando(u.hora) + (u.altitud != null ? ' · ' + nf(u.altitud) + ' m de altitud' : '') + '.'));
       const caja = el('div', 'mapa-box');
       const f = document.createElement('iframe');
       f.className = 'map'; f.loading = 'lazy'; f.title = 'Mapa con la ubicación del coche'; f.referrerPolicy = 'no-referrer-when-downgrade';
@@ -2142,6 +2295,8 @@
     $('avBat').checked = !!a.avisos.bateria; $('avBatV').value = fmt(a.avisos.bateria_v ?? 12, 1);
     $('avRev').checked = !!a.avisos.revision; $('avRevKm').value = String(a.avisos.revision_km ?? 1000);
     $('avErr').checked = !!a.avisos.errores;
+    $('avCal').checked = a.avisos.calendario !== false;
+    $('avTend').checked = a.avisos.tendencias !== false;
     $('ajVigRadio').value = String(a.vigilancia.radio_m || 300);
     $('ajCap').value = fmt(cap, cap % 1 ? 1 : 0);
     $('ajGas').value = String(a.repostaje.gasolineras || 15);
@@ -2180,7 +2335,9 @@
       combustible: $('avComb').checked, combustible_pct: Math.max(1, Math.min(99, Math.round(ajNum('avCombPct', 15)))),
       bateria: $('avBat').checked, bateria_v: Math.max(9, Math.min(14, ajNum('avBatV', 12))),
       revision: $('avRev').checked, revision_km: Math.max(0, Math.round(ajNum('avRevKm', 1000))),
-      errores: $('avErr').checked
+      errores: $('avErr').checked,
+      calendario: $('avCal').checked,
+      tendencias: $('avTend').checked
     };
     n.vigilancia.radio_m = Math.max(100, Math.min(20000, Math.round(ajNum('ajVigRadio', 300))));
     n.repostaje.gasolineras = Math.max(5, Math.min(50, Math.round(ajNum('ajGas', 15))));
@@ -2654,7 +2811,8 @@
       const a = d && d.accion;
       if (a === 'repostar') { vista('rep'); subVista('repostar'); setTimeout(() => { try { $('importe').focus(); } catch (e) {} }, 300); }
       else if (a === 'gasolineras') { vista('rep'); subVista('repostar'); setTimeout(() => { try { $('nearBtn').scrollIntoView({ block: 'center' }); $('nearBtn').click(); } catch (e) {} }, 300); }
-      else if (a === 'coche') vista('car');
+      else if (a === 'coche') { vista('car'); subCar('estado'); }
+      else if (a === 'mantenimiento') { vista('car'); subCar('mant'); }
     });
 
     // Ajustes: vigilancia automática con el Bluetooth del coche
@@ -3040,6 +3198,250 @@
     }));
     $('radDef').addEventListener('click', () => MG.llamar('configurarRadares', { restablecer: true }).then(rellenar).catch(() => rellenar(D)));
   }
+
+  // ---- Mantenimiento: calendario del coche y libro ----
+  const MT_FICH = 'mantenimiento.json';
+  const MT_TIPOS = { itv: 'ITV', seguro: 'Seguro', impuesto: 'Impuesto de circulación', otro: 'Otra' };
+  const ML_TIPOS = { aceite: 'Cambio de aceite y filtro', filtros: 'Filtros', neumaticos: 'Neumáticos', frenos: 'Frenos', adblue: 'AdBlue',
+    bateria: 'Batería', revision: 'Revisión oficial', itv: 'ITV', reparacion: 'Reparación', otro: 'Otro' };
+  let mt = { fechas: [], libro: [], borrados: [] };
+  try { mt = Object.assign(mt, JSON.parse(store.get('mant')) || {}); } catch (e) {}
+  const mtGuardarLocal = () => store.set('mant', JSON.stringify(mt));
+  const mtId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const hoyISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const fechaLarga = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  const diasHasta = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 864e5);
+  const sumarMeses = (iso, m) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); };
+
+  function subCar(sv) {
+    sv = sv === 'mant' ? 'mant' : 'estado';
+    store.set('subCar', sv);
+    $('sEstado').hidden = sv !== 'estado'; $('sMant').hidden = sv !== 'mant';
+    document.querySelectorAll('#carTabs button').forEach(b => { const on = b.dataset.s === sv; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    if (sv === 'mant') { pintarMant(); sincronizarMant(); }
+  }
+  $('carTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) subCar(b.dataset.s); });
+
+  // Sincronización con mantenimiento.json (se combinan por id: gana la versión modificada más tarde)
+  let mtSincronizando = false, mtPendiente = false, mtTimer = null;
+  function programarMant() { clearTimeout(mtTimer); mtTimer = setTimeout(sincronizarMant, 800); }
+  async function sincronizarMant() {
+    const c = cfg(); if (!c) { $('mtSync').textContent = 'Solo en este móvil: conecta la copia en GitHub para guardarlo en tu repositorio.'; return; }
+    if (mtSincronizando) { mtPendiente = true; return; }
+    mtSincronizando = true;
+    try {
+      for (let intento = 0; intento < 3; intento++) {
+        let remoto = {}, sha;
+        const r = await gh(c, '/contents/' + MT_FICH);
+        if (r.ok) { const j = await r.json(); sha = j.sha; try { remoto = JSON.parse(deBase64(j.content)); } catch (e) {} }
+        else if (r.status !== 404) throw new Error(errorTexto(r.status));
+        const borr = [...new Set([...(remoto.borrados || []), ...(mt.borrados || [])])];
+        const unir = (a, b) => { const m = new Map(); [...(a || []), ...(b || [])].forEach(x => { if (!x || !x.id) return; const y = m.get(x.id); if (!y || (x.mod || 0) > (y.mod || 0)) m.set(x.id, x); }); return [...m.values()].filter(x => !borr.includes(x.id)); };
+        const nuevo = { app: 'mi-giulia', fechas: unir(remoto.fechas, mt.fechas), libro: unir(remoto.libro, mt.libro), borrados: borr.slice(-300) };
+        mt = nuevo; mtGuardarLocal(); pintarMant();
+        const texto = JSON.stringify(nuevo, null, 1), viejo = JSON.stringify({ app: 'mi-giulia', fechas: remoto.fechas || [], libro: remoto.libro || [], borrados: remoto.borrados || [] }, null, 1);
+        if (r.ok && texto === viejo) break;
+        const put = await gh(c, '/contents/' + MT_FICH, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Mantenimiento', content: aBase64(texto), ...(sha ? { sha } : {}) }) });
+        if (put.ok) break;
+        if (put.status !== 409 && put.status !== 422) throw new Error(errorTexto(put.status));
+      }
+      $('mtSync').textContent = 'Guardado en tu repositorio privado.';
+    } catch (e) { $('mtSync').textContent = 'Guardado en el móvil; no se ha podido subir a GitHub (' + (e.message || e) + '). Se reintentará.'; }
+    mtSincronizando = false;
+    if (mtPendiente) { mtPendiente = false; programarMant(); }
+  }
+
+  function pintarMant() {
+    const box = $('mtFechas'); box.innerHTML = '';
+    const items = [];
+    // Automáticas: aceite y revisión oficial
+    const km = coche && coche.km;
+    if (aj.aceite.proximo_km && km != null) {
+      const f = aj.aceite.proximo_km - km;
+      items.push({ auto: true, orden: f / 50, tit: 'Cambio de aceite', sub: 'a los ' + nf(aj.aceite.proximo_km) + ' km', falta: f > 0 ? nf(f) + ' km' : 'toca ya', nivel: f <= 0 ? 'urge' : f <= (aj.aceite.antelacion_km || 500) ? 'aviso' : '' });
+    }
+    const rv = coche && coche.revision;
+    if (rv && (rv.km != null || rv.dias != null)) {
+      const d = rv.dias != null ? rv.dias : 9999;
+      items.push({ auto: true, orden: Math.min(d, rv.km != null ? rv.km / 50 : 9999), tit: 'Revisión oficial', sub: 'la pide el coche',
+        falta: rv.km != null ? nf(rv.km) + ' km' : nf(d) + ' días', nivel: (rv.km != null && rv.km < 1000) || d < 30 ? 'aviso' : '' });
+    }
+    mt.fechas.forEach(f => {
+      const d = diasHasta(f.fecha);
+      items.push({ f, orden: d, tit: f.tipo === 'otro' ? (f.nombre || 'Fecha') : MT_TIPOS[f.tipo], sub: fechaLarga(f.fecha) + (f.rep ? ' · cada ' + (f.rep % 12 ? f.rep + ' meses' : f.rep / 12 === 1 ? 'año' : f.rep / 12 + ' años') : ''),
+        falta: d < 0 ? 'hace ' + (-d) + ' días' : d === 0 ? 'hoy' : d === 1 ? 'mañana' : d < 60 ? 'en ' + d + ' días' : 'en ' + Math.round(d / 30.4) + ' meses',
+        nivel: d <= 7 ? 'urge' : d <= (f.avisar || 30) ? 'aviso' : '' });
+    });
+    items.sort((a, b) => a.orden - b.orden);
+    items.forEach(it => {
+      const b = el(it.auto ? 'div' : 'button', 'mt-item' + (it.auto ? ' auto' : '')); if (!it.auto) b.type = 'button';
+      const t = el('div', 'mt-txt'); t.append(el('b', null, it.tit), el('span', null, it.sub));
+      b.append(t, el('div', 'mt-falta' + (it.nivel ? ' ' + it.nivel : ''), it.falta));
+      if (it.f) b.addEventListener('click', () => abrirFecha(it.f));
+      box.append(b);
+      if (it.f && it.f.rep && diasHasta(it.f.fecha) <= 30) {
+        const h = el('button', 'link-btn mt-hecha', '✓ Hecha: pasar a ' + fechaLarga(sumarMeses(it.f.fecha, it.f.rep))); h.type = 'button';
+        h.addEventListener('click', () => { it.f.fecha = sumarMeses(it.f.fecha, it.f.rep); it.f.mod = Date.now(); mtGuardarLocal(); pintarMant(); programarMant(); });
+        box.append(h);
+      }
+    });
+    const tiene = t => mt.fechas.some(f => f.tipo === t);
+    const faltan = ['itv', 'seguro', 'impuesto'].filter(t => !tiene(t));
+    $('mtFechasMeta').textContent = faltan.length ? 'Añade ' + faltan.map(t => MT_TIPOS[t].toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' y $1') + ' para que te avise.' + (!tiene('itv') ? ' Tu Giulia es de junio de 2021: la ITV le toca cada 2 años desde 2025, así que la siguiente sería en junio de 2027 (el día exacto está en tu tarjeta ITV).' : '') : '';
+
+    // Libro
+    const lb = $('mtLibro'); lb.innerHTML = '';
+    const lista = mt.libro.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    if (!lista.length) lb.append(el('p', 'near-meta', 'Aún no hay nada apuntado. Pulsa «Añadir» para guardar un cambio de aceite, una revisión, neumáticos…'));
+    lista.forEach(x => {
+      const b = el('button', 'mt-lib'); b.type = 'button';
+      b.append(el('b', null, ML_TIPOS[x.tipo] || 'Mantenimiento'), el('div', 'pr', x.precio ? eur(x.precio) : ''),
+        el('span', null, [fechaLarga(x.fecha), x.km ? nf(x.km) + ' km' : null, x.taller || null].filter(Boolean).join(' · ') + (x.notas ? ' — ' + x.notas : '')));
+      b.addEventListener('click', () => abrirLibro(x));
+      lb.append(b);
+    });
+    const res = $('mtResumen'); res.innerHTML = '';
+    if (lista.length) {
+      const anio = new Date().getFullYear();
+      const esteAnio = lista.filter(x => (x.fecha || '').startsWith(String(anio))).reduce((s, x) => s + (x.precio || 0), 0);
+      const total = lista.reduce((s, x) => s + (x.precio || 0), 0);
+      res.append(tarjeta('Gastado en ' + anio, eur(esteAnio), lista.filter(x => (x.fecha || '').startsWith(String(anio))).length + ' apuntes'));
+      res.append(tarjeta('Total apuntado', eur(total), 'desde ' + fechaLarga(lista[lista.length - 1].fecha)));
+    }
+  }
+
+  // Editar una fecha
+  let mfActual = null;
+  function abrirFecha(f, plantilla) {
+    mfActual = f || null;
+    const x = f || plantilla || { tipo: 'itv', fecha: '', rep: 24, avisar: 30 };
+    $('mtFechaTit').textContent = f ? 'Editar fecha' : 'Nueva fecha';
+    $('mfTipo').value = x.tipo || 'itv'; $('mfNombre').value = x.nombre || ''; $('mfFecha').value = x.fecha || '';
+    $('mfRep').value = String(x.rep != null ? x.rep : 0); $('mfAvisar').value = String(x.avisar || 30); $('mfNotas').value = x.notas || '';
+    $('mfNombreL').hidden = $('mfTipo').value !== 'otro'; $('mfBorrar').hidden = !f; $('mfMsg').textContent = '';
+    $('mtFechaDlg').showModal();
+  }
+  $('mfTipo').addEventListener('change', () => {
+    const t = $('mfTipo').value; $('mfNombreL').hidden = t !== 'otro';
+    if (!mfActual) $('mfRep').value = t === 'itv' ? '24' : t === 'otro' ? '0' : '12';
+  });
+  $('mtAddFecha').addEventListener('click', () => {
+    const tiene = t => mt.fechas.some(f => f.tipo === t);
+    const t = !tiene('itv') ? 'itv' : !tiene('seguro') ? 'seguro' : !tiene('impuesto') ? 'impuesto' : 'otro';
+    abrirFecha(null, { tipo: t, fecha: t === 'itv' ? '2027-06-01' : '', rep: t === 'itv' ? 24 : t === 'otro' ? 0 : 12, avisar: 30 });
+  });
+  $('mfCancel').addEventListener('click', () => $('mtFechaDlg').close());
+  $('mfBorrar').addEventListener('click', () => {
+    if (!mfActual || !confirm('¿Borrar esta fecha?')) return;
+    mt.fechas = mt.fechas.filter(x => x.id !== mfActual.id); mt.borrados.push(mfActual.id);
+    mtGuardarLocal(); $('mtFechaDlg').close(); pintarMant(); programarMant();
+  });
+  $('mfGuardar').addEventListener('click', () => {
+    const fecha = $('mfFecha').value, tipo = $('mfTipo').value;
+    if (!fecha) { $('mfMsg').textContent = 'Pon la fecha.'; return; }
+    if (tipo === 'otro' && !$('mfNombre').value.trim()) { $('mfMsg').textContent = 'Ponle un nombre.'; return; }
+    const datos = { tipo, nombre: tipo === 'otro' ? $('mfNombre').value.trim() : '', fecha, rep: Number($('mfRep').value) || 0,
+      avisar: Math.max(1, Math.min(180, parseInt($('mfAvisar').value, 10) || 30)), notas: $('mfNotas').value.trim(), mod: Date.now() };
+    if (mfActual) Object.assign(mfActual, datos); else mt.fechas.push({ id: mtId(), ...datos });
+    mtGuardarLocal(); $('mtFechaDlg').close(); pintarMant(); programarMant();
+  });
+
+  // Editar un apunte del libro
+  let mlActual = null;
+  function abrirLibro(x) {
+    mlActual = x || null;
+    const v = x || { tipo: 'aceite', fecha: hoyISO(), km: coche && coche.km != null ? Math.round(coche.km) : '' };
+    $('mtLibroTit').textContent = x ? 'Editar apunte' : 'Nuevo apunte';
+    $('mlTipo').value = v.tipo || 'otro'; $('mlFecha').value = v.fecha || hoyISO(); $('mlKm').value = v.km ? String(v.km) : '';
+    $('mlTaller').value = v.taller || ''; $('mlPrecio').value = v.precio ? fmt(v.precio) : ''; $('mlNotas').value = v.notas || '';
+    $('mlBorrar').hidden = !x; $('mlMsg').textContent = '';
+    $('mtLibroDlg').showModal();
+  }
+  $('mtAddLibro').addEventListener('click', () => abrirLibro(null));
+  $('mlCancel').addEventListener('click', () => $('mtLibroDlg').close());
+  $('mlBorrar').addEventListener('click', () => {
+    if (!mlActual || !confirm('¿Borrar este apunte?')) return;
+    mt.libro = mt.libro.filter(x => x.id !== mlActual.id); mt.borrados.push(mlActual.id);
+    mtGuardarLocal(); $('mtLibroDlg').close(); pintarMant(); programarMant();
+  });
+  $('mlGuardar').addEventListener('click', async () => {
+    const fecha = $('mlFecha').value; if (!fecha) { $('mlMsg').textContent = 'Pon la fecha.'; return; }
+    const km = parseInt($('mlKm').value.replace(/\D/g, ''), 10) || null, precio = parse($('mlPrecio').value);
+    const datos = { tipo: $('mlTipo').value, fecha, km, taller: $('mlTaller').value.trim(), precio: precio > 0 ? Math.round(precio * 100) / 100 : null, notas: $('mlNotas').value.trim(), mod: Date.now() };
+    const nuevo = !mlActual;
+    if (mlActual) Object.assign(mlActual, datos); else mt.libro.push({ id: mtId(), ...datos });
+    let extra = '';
+    if (nuevo && datos.tipo === 'aceite' && km) {
+      aj.aceite.ultimo = { km, fecha: new Date(fecha + 'T12:00:00').toISOString() };
+      aj.aceite.proximo_km = km + (aj.aceite.intervalo_km || 10000);
+      aj.modificado = new Date().toISOString(); guardarAjLocal(); subirAjustes();
+      extra = 'Próximo cambio de aceite a los ' + nf(aj.aceite.proximo_km) + ' km.';
+    }
+    if (nuevo && datos.tipo === 'itv') {
+      const f = mt.fechas.find(x => x.tipo === 'itv');
+      if (f && Math.abs(diasHasta(f.fecha) - diasHasta(fecha)) < 120 && f.rep) { f.fecha = sumarMeses(f.fecha, f.rep); f.mod = Date.now(); extra = 'La próxima ITV queda para el ' + fechaLarga(f.fecha) + '.'; }
+    }
+    mtGuardarLocal(); $('mtLibroDlg').close(); pintarMant(); programarMant();
+    if (extra) $('mtSync').textContent = extra;
+    try { pintarCoche(); } catch (e) {}
+  });
+  subCar(store.get('subCar') || 'estado');
+  // ---- Fechas del coche en el calendario del móvil (Samsung, Google…) ----
+  let calTimer = null;
+  function sincronizarCalendarioMovil() {
+    if (!MG || !store.get('calMovil')) return;
+    clearTimeout(calTimer);
+    calTimer = setTimeout(() => MG.llamar('sincronizarCalendario', { fechas: mt.fechas || [] })
+      .then(r => { const e = $('calEstado'); if (e) e.textContent = 'Copiadas ' + r.eventos + ' fechas al calendario «' + (store.get('calNombre') || '') + '».'; })
+      .catch(err => { const e = $('calEstado'); if (e) e.textContent = 'No se ha podido actualizar el calendario: ' + (err.message || err); }), 700);
+  }
+  const progMantOrig = programarMant;
+  programarMant = function () { progMantOrig(); sincronizarCalendarioMovil(); };
+  if (MG && document.querySelector('.bt-auto')) {
+    const dv = document.createElement('div');
+    dv.innerHTML = '<h3>Calendario del móvil</h3><p class="aj-estado" id="calEstado"></p>' +
+      '<label class="chk"><input type="checkbox" id="calOn"> Copiar las fechas del coche (ITV, seguro, impuesto…) a mi calendario, con sus recordatorios</label>' +
+      '<div class="ed-grid" style="margin-top:8px"><label class="full"><span>Calendario</span><select id="calLista"><option value="">Marca la casilla para ver tus calendarios</option></select></label></div>';
+    document.querySelector('.bt-auto').appendChild(dv);
+    const pintarCal = () => { $('calOn').checked = !!store.get('calMovil'); if (!store.get('calMovil')) $('calEstado').textContent = 'Desactivado.'; };
+    const cargarListaCal = async () => {
+      const r = await MG.llamar('listarCalendarios');
+      const sel = $('calLista'); sel.innerHTML = '';
+      const lista = r.calendarios || [];
+      lista.sort((a, b) => (b.samsung ? 1 : 0) - (a.samsung ? 1 : 0));
+      lista.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nombre + (c.samsung ? ' (Samsung)' : c.cuenta ? ' (' + c.cuenta + ')' : ''); sel.appendChild(o); });
+      const elegido = r.elegido >= 0 && lista.some(c => c.id === r.elegido) ? r.elegido : (lista.find(c => c.samsung) || lista[0] || {}).id;
+      if (elegido != null) sel.value = String(elegido);
+      return elegido;
+    };
+    const activar = async () => {
+      try {
+        const id = await cargarListaCal();
+        if (id == null) { $('calEstado').textContent = 'No hay ningún calendario en el que se pueda escribir.'; $('calOn').checked = false; return; }
+        await MG.llamar('configurarCalendario', { id: Number($('calLista').value) });
+        store.set('calMovil', '1'); store.set('calNombre', $('calLista').selectedOptions[0].textContent);
+        sincronizarCalendarioMovil();
+      } catch (e) { $('calOn').checked = false; store.set('calMovil', ''); $('calEstado').textContent = 'Sin permiso para el calendario. Permítelo en Ajustes de Android → Aplicaciones → Mi Giulia → Permisos → Calendario.'; }
+    };
+    $('calOn').addEventListener('change', async () => {
+      if ($('calOn').checked) activar();
+      else {
+        store.set('calMovil', '');
+        try { await MG.llamar('configurarCalendario', { id: -1 }); await MG.llamar('sincronizarCalendario', { fechas: [] }); } catch (e) {}
+        $('calEstado').textContent = 'Desactivado: he quitado del calendario los eventos que creó Mi Giulia.';
+      }
+    });
+    $('calLista').addEventListener('change', async () => {
+      if (!store.get('calMovil')) return;
+      await MG.llamar('configurarCalendario', { id: Number($('calLista').value) }).catch(() => {});
+      store.set('calNombre', $('calLista').selectedOptions[0].textContent);
+      sincronizarCalendarioMovil();
+    });
+    pintarCal();
+    if (store.get('calMovil')) { cargarListaCal().catch(() => {}); sincronizarCalendarioMovil(); }
+  }
+
   subVista(store.get('subRep') || 'repostar');
 
 
