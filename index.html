@@ -679,7 +679,7 @@
       <li>Toca una para usar su precio. Pulsa <b>Ir</b> para abrir la ruta en Google Maps (también funciona en Android Auto).</li>
       <li>En <b>Marca</b> puedes escribir una marca (por ejemplo «galp») para ver solo esas, en un radio de 150 km.</li>
     </ol>
-    <p class="tip">Los precios son los oficiales del Ministerio y se actualizan cuatro veces al día. La fecha de los datos aparece bajo el botón.</p>
+    <p class="tip">Los precios son los oficiales del Ministerio. Al buscar, la app pide al momento los de tu zona; si no puede, usa la copia que se descarga cuatro veces al día. La fecha y hora de los precios aparece bajo el botón. Si una gasolinera tarda en comunicar un cambio al Ministerio, puede haber un céntimo de diferencia.</p>
   </details>
   <details>
     <summary>Guardar, editar y borrar repostajes</summary>
@@ -1124,7 +1124,7 @@
       if (!datos) {
         const r = await fetch('data/precios.json?' + Date.now());
         if (!r.ok) throw new Error('datos');
-        datos = await r.json();
+        datos = await r.json(); datosBase = datos;
       }
     } catch (err) {
       meta.textContent = 'No se han podido cargar los precios. Revisa la conexión o que la actualización automática haya funcionado.';
@@ -1133,46 +1133,68 @@
     navigator.geolocation.getCurrentPosition(p => {
       pos = { lat: p.coords.latitude, lon: p.coords.longitude };
       pintar();
-      refrescarDesdeMovil();
+      refrescarDesdeMovil(false);
     }, () => {
       meta.textContent = 'No tengo permiso para la ubicación. Actívalo para esta web en los ajustes del navegador.';
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   });
 
 
-  // ---- Plan B: si los datos de GitHub son viejos, el móvil pide su provincia directamente al Ministerio ----
-  let refrescado = false;
-  function horasDesde(fecha) {
-    const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/.exec(fecha || '');
-    if (!m) return Infinity;
-    return (Date.now() - new Date(+m[3], m[2] - 1, +m[1], +m[4], +m[5]).getTime()) / 36e5;
+  // ---- Precios al momento: el móvil pide al Ministerio las provincias de alrededor ----
+  // El fichero de GitHub se renueva cada 6 horas; esto trae los precios de ahora mismo de tu zona.
+  // En la app Android va por el HTTP nativo (sin las restricciones del navegador); en el navegador se intenta con fetch.
+  const MINISTERIO = 'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/';
+  const frescas = {};          // provincia -> { t, fecha, estaciones }
+  let datosBase = null, refrescando = false;
+  async function pedirProvincia(prov) {
+    const C = window.Capacitor;
+    if (C && C.isNativePlatform && C.isNativePlatform() && C.nativePromise) {
+      const r = await C.nativePromise('CapacitorHttp', 'request', {
+        url: MINISTERIO + prov, method: 'GET', headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Linux; Android) MiGiulia' },
+        responseType: 'json', connectTimeout: 15000, readTimeout: 40000
+      });
+      if (r.status !== 200) throw new Error('HTTP ' + r.status);
+      return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+    }
+    const r = await fetch(MINISTERIO + prov, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
   }
-  async function refrescarDesdeMovil() {
-    if (refrescado || !datos || !pos || horasDesde(datos.fecha) < 12) return;
-    const cercana = datos.estaciones
-      .filter(e => e[9])
-      .map(e => ({ e, km: dist(pos.lat, pos.lon, e[3], e[4]) }))
-      .sort((a, b) => a.km - b.km)[0];
-    if (!cercana || cercana.km > 60) return;
-    refrescado = true;
-    const prov = cercana.e[9];
-    try {
-      const r = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/' + prov,
-        { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
-      if (!r.ok) return;
-      const j = await r.json();
-      const n = s => { const v = parseFloat(String(s || '').replace(',', '.')); return isNaN(v) ? null : v; };
-      const nuevas = (j.ListaEESSPrecio || []).map(e => [
-        (e['Rótulo'] || '').trim(), (e['Dirección'] || '').trim(), (e['Localidad'] || '').trim(),
-        n(e['Latitud']), n(e['Longitud (WGS84)']), n(e['Precio Gasoleo A']), n(e['Precio Gasoleo Premium']),
-        n(e['Precio Gasolina 95 E5']), (e['Horario'] || '').trim(), (e['IDProvincia'] || '').trim()
-      ]).filter(e => e[3] != null && e[4] != null);
-      if (!nuevas.length) return;
-      datos = { ...datos, fecha: (j.Fecha || datos.fecha) + ' (tu provincia, directo del Ministerio)',
-        estaciones: datos.estaciones.filter(e => e[9] !== prov).concat(nuevas) };
+  const numMin = s => { const v = parseFloat(String(s || '').replace(',', '.')); return isNaN(v) ? null : v; };
+  function horaFecha(f) { const m = /(\d{1,2}):(\d{2})/.exec(f || ''); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; }
+  async function refrescarDesdeMovil(forzar) {
+    if (refrescando || !datos || !pos) return;
+    if (!datosBase || !String(datos.fecha).includes('al momento')) datosBase = datos;
+    // Provincias con gasolineras a menos de 30 km (normalmente una, en el límite dos o tres)
+    const provs = [...new Set(datosBase.estaciones.filter(e => e[9] && dist(pos.lat, pos.lon, e[3], e[4]) <= 30).map(e => e[9]))].slice(0, 3);
+    const pend = provs.filter(p => forzar || !frescas[p] || Date.now() - frescas[p].t > 10 * 60e3);
+    if (!provs.length) return;
+    refrescando = true;
+    const meta = $('nearMeta');
+    if (pend.length && meta) meta.textContent += ' Actualizando los precios al momento…';
+    let fallo = false;
+    await Promise.all(pend.map(async prov => {
+      try {
+        const j = await pedirProvincia(prov);
+        const est = (j.ListaEESSPrecio || []).map(e => [
+          (e['Rótulo'] || '').trim(), (e['Dirección'] || '').trim(), (e['Localidad'] || '').trim(),
+          numMin(e['Latitud']), numMin(e['Longitud (WGS84)']), numMin(e['Precio Gasoleo A']), numMin(e['Precio Gasoleo Premium']),
+          numMin(e['Precio Gasolina 95 E5']), (e['Horario'] || '').trim(), (e['IDProvincia'] || prov).trim()
+        ]).filter(e => e[3] != null && e[4] != null);
+        if (est.length) frescas[prov] = { t: Date.now(), fecha: j.Fecha || '', estaciones: est };
+      } catch (e) { fallo = true; }
+    }));
+    refrescando = false;
+    const ok = provs.filter(p => frescas[p]);
+    if (ok.length) {
+      const fechaMin = frescas[ok[0]].fecha;
+      datos = { ...datosBase,
+        fecha: fechaMin.replace(/:\d{2}$/, '') + ' (al momento' + (ok.length < provs.length ? ', parte de tu zona' : '') + ')',
+        estaciones: datosBase.estaciones.filter(e => !frescas[e[9]]).concat(...ok.map(p => frescas[p].estaciones)) };
       marcasHechas = null;
-      pintar();
-    } catch (e) { /* si el Ministerio no lo permite desde el navegador, seguimos con los datos de GitHub */ }
+    }
+    pintar();
+    if (fallo && !ok.length && meta) meta.textContent += ' No he podido traer los precios al momento: son los de las ' + horaFecha(datosBase.fecha) + '.';
   }
 
   // ---- Historial de repostajes ----
