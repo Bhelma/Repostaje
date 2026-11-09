@@ -1,0 +1,35 @@
+name: Actualizar radares
+
+# Una vez por semana: radares de la DGT + OpenStreetMap -> data/radares.json
+on:
+  schedule:
+    - cron: "37 4 * * 1"   # lunes a las 04:37 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radares
+  cancel-in-progress: false
+
+jobs:
+  radares:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Descargar radares
+        run: python scripts/radares.py
+      - name: Guardar cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add data/radares.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Radares actualizados"
+          for i in 1 2 3; do git pull --rebase -X theirs && git push && exit 0; sleep 5; done
+          exit 1
