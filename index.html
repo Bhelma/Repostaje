@@ -397,6 +397,17 @@
   .graf-ley { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; color: var(--muted); font-size: .9rem; }
   .graf-ley i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 
+  .fav { flex: none; font-size: 1.5rem; line-height: 1; background: none; border: 0; color: var(--muted); padding: 6px 4px; cursor: pointer; }
+  .fav.on { color: #F2B300; }
+  .fav-tend { font-size: .9rem; font-weight: 700; }
+  .fav-tend.baja { color: #2E7D32; }
+  .fav-tend.sube { color: var(--red); }
+  .ruta-busca { display: flex; gap: 8px; }
+  .ruta-busca input { flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .ruta-busca .near-btn { width: auto; margin: 0; padding-left: 18px; padding-right: 18px; }
+  .st .nollega { color: var(--warn); font-weight: 700; }
+  #rutaList .addr, #favList .addr { white-space: normal; overflow: visible; text-overflow: clip; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -551,6 +562,21 @@
     <datalist id="brandOptions"></datalist>
     <p class="near-meta" id="nearMeta"></p>
     <ul class="st-list" id="stList"></ul>
+  </section>
+
+  <section class="near" id="favSec">
+    <div class="near-head"><h2>Mis favoritas</h2></div>
+    <p class="near-meta" id="favMeta"></p>
+    <ul class="st-list" id="favList"></ul>
+  </section>
+
+  <section class="near" id="rutaSec">
+    <div class="near-head"><h2>Repostar en ruta</h2></div>
+    <p class="near-meta">Pon a dónde vas y te digo dónde te sale más barato parar por el camino, teniendo en cuenta lo que llevas en el depósito.</p>
+    <div class="ruta-busca"><input id="rutaDestino" type="search" placeholder="Destino: ciudad o dirección" autocomplete="off" enterkeyhint="search"><button type="button" class="near-btn" id="rutaBtn">Buscar</button></div>
+    <p class="near-meta" id="rutaMeta"></p>
+    <div class="mapa-box" id="rutaMapaBox" hidden><div id="rutaMapa" class="vj-mapa"></div></div>
+    <ul class="st-list" id="rutaList"></ul>
   </section>
 
   <section class="near" id="cmp">
@@ -863,6 +889,15 @@
     </ul>
   </details>
   <details>
+    <summary>Favoritas, avisos de precio y repostar en ruta</summary>
+    <ul>
+      <li>Toca la <b>☆</b> de una gasolinera en «Gasolineras cercanas» para tenerla en <b>Mis favoritas</b>, con su precio de ahora y cuánto ha subido o bajado en la última semana. Tócala para ver la gráfica de su precio.</li>
+      <li>En <b>Ajustes → Notificaciones</b> puedes pedir aviso si el diésel de una favorita baja de un precio, o cuando baje 2 céntimos o más de un día a otro. Usa el combustible habitual de Ajustes.</li>
+      <li>El precio de las favoritas se guarda cada día en tu repositorio privado, así que la gráfica se va llenando con el tiempo.</li>
+      <li><b>Repostar en ruta</b>: escribe el destino y te enseña las gasolineras más baratas a menos de 1,5 km del camino, a qué km están y si llegas con lo que llevas en el depósito. «Ir» abre Google Maps con la gasolinera como parada.</li>
+    </ul>
+  </details>
+  <details>
     <summary>Mantenimiento: calendario y libro</summary>
     <p>En <b>Mi Giulia → Mantenimiento</b>.</p>
     <ul>
@@ -969,6 +1004,8 @@
     <label class="chk"><input type="checkbox" id="avBat"> Batería 12 V por debajo de <input id="avBatV" class="mini" type="text" inputmode="decimal"> V</label>
     <label class="chk"><input type="checkbox" id="avRev"> Revisión oficial a menos de <input id="avRevKm" class="mini" type="text" inputmode="numeric"> km</label>
     <label class="chk"><input type="checkbox" id="avErr"> Si no puedo leer el coche en unas 12 horas</label>
+    <label class="chk"><input type="checkbox" id="avPrecio"> Favoritas: avisar si el diésel baja de <input id="avPrecioMax" class="mini" type="text" inputmode="decimal" placeholder="1,650"> €/L</label>
+    <label class="chk"><input type="checkbox" id="avBajada"> Favoritas: avisar cuando bajen 2 céntimos o más de un día a otro</label>
     <label class="chk"><input type="checkbox" id="avTend"> Posible pinchazo lento y batería de 12 V que se va agotando (según el historial)</label>
     <label class="chk"><input type="checkbox" id="avCal"> Calendario del coche: ITV, seguro, impuesto y tus fechas (aviso antes, a una semana y el día)</label>
   </div>
@@ -1057,6 +1094,18 @@
   </div>
 </dialog>
 
+<dialog id="favDlg" class="sheet">
+  <h2 id="favTit">Gasolinera</h2>
+  <p class="aj-estado" id="favSub"></p>
+  <ul class="kv" id="favDatos"></ul>
+  <div id="favGraf"></div>
+  <div class="dlg-actions">
+    <button type="button" id="favQuitar">Quitar</button>
+    <button type="button" id="favUsar">Usar precio</button>
+    <button type="button" class="primary" id="favCerrar">Cerrar</button>
+  </div>
+</dialog>
+
 <dialog id="pinDlg">
   <h2 id="pinTit">PIN de My Remote</h2>
   <p>El mismo PIN de 4 cifras que usas en la app de Alfa. No se guarda en ningún sitio.</p>
@@ -1089,7 +1138,8 @@
     aceite: { proximo_km: null, antelacion_km: 500, intervalo_km: 10000, ultimo: null },
     avisos: { aceite: true, neumaticos: true, presion_min_bar: 2.0, combustible: false, combustible_pct: 15,
       bateria: true, bateria_v: 12.0, revision: true, revision_km: 1000, errores: true },
-    repostaje: { gasolineras: 15 },
+    repostaje: { gasolineras: 15, fuel: 5 },
+    favoritas: [],
     app: { pestana: 'ultima', tema: 'auto' },
     vigilancia: { activa: false, radio_m: 300, centro: null, desde: null },
     suscripciones: [], modificado: null
@@ -1326,7 +1376,10 @@
       go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + e[3] + ',' + e[4] + '&travelmode=driving';
       go.target = '_blank'; go.rel = 'noopener';
       go.setAttribute('aria-label', 'Cómo llegar a ' + cap1(e[0]));
-      li.append(b, go); ul.appendChild(li);
+      const fv = document.createElement('button'); fv.type = 'button'; fv.className = 'fav' + (esFav(e) ? ' on' : '');
+      fv.textContent = esFav(e) ? '★' : '☆'; fv.setAttribute('aria-label', esFav(e) ? 'Quitar de favoritas' : 'Añadir a favoritas');
+      fv.addEventListener('click', () => { alternarFav(e); const on = esFav(e); fv.classList.toggle('on', on); fv.textContent = on ? '★' : '☆'; });
+      li.append(b, fv, go); ul.appendChild(li);
     });
   }
 
@@ -2296,6 +2349,8 @@
     $('avRev').checked = !!a.avisos.revision; $('avRevKm').value = String(a.avisos.revision_km ?? 1000);
     $('avErr').checked = !!a.avisos.errores;
     $('avCal').checked = a.avisos.calendario !== false;
+    $('avPrecio').checked = !!a.avisos.precio; $('avPrecioMax').value = a.avisos.precio_max ? fmt(a.avisos.precio_max, 3) : '';
+    $('avBajada').checked = a.avisos.bajada !== false;
     $('avTend').checked = a.avisos.tendencias !== false;
     $('ajVigRadio').value = String(a.vigilancia.radio_m || 300);
     $('ajCap').value = fmt(cap, cap % 1 ? 1 : 0);
@@ -2337,6 +2392,8 @@
       revision: $('avRev').checked, revision_km: Math.max(0, Math.round(ajNum('avRevKm', 1000))),
       errores: $('avErr').checked,
       calendario: $('avCal').checked,
+      precio: $('avPrecio').checked, precio_max: parse($('avPrecioMax').value) > 0 ? parse($('avPrecioMax').value) : null,
+      bajada: $('avBajada').checked,
       tendencias: $('avTend').checked
     };
     n.vigilancia.radio_m = Math.max(100, Math.min(20000, Math.round(ajNum('ajVigRadio', 300))));
@@ -2347,6 +2404,7 @@
     const nc = ajNum('ajCap', cap);
     if (nc > 0 && nc < 200) { cap = nc; store.set('cap', String(nc)); }
     const f = Number(getToggle('ajFuel')) || fuel;
+    n.repostaje.fuel = f;
     setFuel(f); setSaveFuel(f);
     aj = n; guardarAjLocal(); aplicarTema();
     render(); pintarCoche(); if (datos && pos) pintar();
@@ -2389,7 +2447,7 @@
       if (a.datos) {
         const remoto = a.datos;
         if (!aj.modificado || (remoto.modificado && remoto.modificado > aj.modificado)) {
-          aj = fusion(AJ_DEF, remoto); guardarAjLocal(); aplicarTema(); pintarCoche();
+          aj = fusion(AJ_DEF, remoto); guardarAjLocal(); aplicarTema(); pintarCoche(); try { pintarFavs(); } catch (e) {}
         } else aj.suscripciones = remoto.suscripciones || [];
       }
     } catch (e) {}
@@ -3442,6 +3500,192 @@
     if (store.get('calMovil')) { cargarListaCal().catch(() => {}); sincronizarCalendarioMovil(); }
   }
 
+
+  // ---- Gasolineras favoritas ----
+  const favKey = e => Number(e[3]).toFixed(4) + ',' + Number(e[4]).toFixed(4);
+  function esFav(e) { return (aj.favoritas || []).some(f => f.k === favKey(e)); }
+  function alternarFav(e) {
+    const k = favKey(e);
+    aj.favoritas = (aj.favoritas || []).slice();
+    if (esFav(e)) aj.favoritas = aj.favoritas.filter(f => f.k !== k);
+    else aj.favoritas.push({ k, nombre: marcaDe(e[0]) + ', ' + cap1(e[2]), dir: cap1(e[1]), lat: e[3], lon: e[4] });
+    aj.modificado = new Date().toISOString(); guardarAjLocal(); subirAjustes(); pintarFavs();
+  }
+  async function datosPrecios() {
+    if (datos) return datos;
+    const r = await fetch('data/precios.json?' + Date.now());
+    if (!r.ok) throw new Error('precios');
+    datos = await r.json(); datosBase = datos;
+    return datos;
+  }
+  function estacionDe(f, d) {
+    let mejor = null, md = 0.08;
+    for (const e of d.estaciones) {
+      if (e[3] == null || Math.abs(e[3] - f.lat) > 0.002 || Math.abs(e[4] - f.lon) > 0.003) continue;
+      const km = dist(f.lat, f.lon, e[3], e[4]);
+      if (km < md) { mejor = e; md = km; }
+    }
+    return mejor;
+  }
+  let favHist = null, favHistT = 0;
+  async function historialFavs() {
+    if (favHist && Date.now() - favHistT < 10 * 60e3) return favHist;
+    favHistT = Date.now();
+    try { const r = await leerRepo('precios-favoritas.json'); favHist = (r.datos && r.datos.favoritas) || {}; } catch (e) { favHist = favHist || {}; }
+    return favHist;
+  }
+  const pr3 = v => v == null ? '–' : v.toLocaleString('es-ES', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  async function pintarFavs() {
+    const ul = $('favList'), meta = $('favMeta');
+    const favs = aj.favoritas || [];
+    ul.innerHTML = '';
+    if (!favs.length) { meta.textContent = 'Toca la ☆ de una gasolinera en «Gasolineras cercanas» y la tendrás aquí con su precio y cómo evoluciona.'; return; }
+    meta.textContent = 'Cargando precios…';
+    let d; try { d = await datosPrecios(); } catch (e) { meta.textContent = 'No se han podido cargar los precios.'; return; }
+    const hist = await historialFavs();
+    meta.textContent = (fuel === 6 ? 'Diésel+' : 'Diésel') + ', precios del Ministerio del ' + d.fecha + '.';
+    ul.innerHTML = '';
+    favs.forEach(f => {
+      const e = estacionDe(f, d), p = e ? e[fuel] : null;
+      const serie = hist[f.k] || [];
+      const col = fuel === 6 ? 2 : 1;
+      const haceSemana = serie.filter(x => (Date.now() - new Date(x[0] + 'T12:00:00')) / 864e5 >= 6.5).pop();
+      const li = document.createElement('li');
+      const b = el('button', 'st'); b.type = 'button';
+      const pr = el('span', 'price', p != null ? pr3(p) + ' €' : 'sin dato');
+      let tend = '';
+      if (p != null && haceSemana && haceSemana[col] != null) {
+        const c = Math.round((p - haceSemana[col]) * 1000) / 10;
+        tend = c <= -0.5 ? '▼ ' + nf(-c, 1) + ' cént. en 7 días' : c >= 0.5 ? '▲ ' + nf(c, 1) + ' cént. en 7 días' : '= igual que hace 7 días';
+      }
+      const t = el('span', 'addr', (f.dir || '') + (tend ? ' · ' : ''));
+      if (tend) t.append(el('span', 'fav-tend ' + (tend[0] === '▼' ? 'baja' : tend[0] === '▲' ? 'sube' : ''), tend));
+      b.append(el('span', 'name', f.nombre), pr, t);
+      b.addEventListener('click', () => abrirFav(f, e, serie));
+      const go = el('a', 'go', 'Ir'); go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + f.lat + ',' + f.lon + '&travelmode=driving'; go.target = '_blank'; go.rel = 'noopener';
+      li.append(b, go); ul.append(li);
+    });
+  }
+  let favActual = null;
+  function abrirFav(f, e, serie) {
+    favActual = { f, e };
+    $('favTit').textContent = f.nombre; $('favSub').textContent = f.dir || '';
+    const ul = $('favDatos'); ul.innerHTML = '';
+    if (e) { fila(ul, 'Diésel', pr3(e[5]) + ' €/L'); fila(ul, 'Diésel+', pr3(e[6]) + ' €/L'); if (e[8]) fila(ul, 'Horario', e[8]); }
+    else fila(ul, 'Precio', 'No aparece en los datos de hoy');
+    const g = $('favGraf'); g.innerHTML = '';
+    const col = fuel === 6 ? 2 : 1;
+    const pts = serie.filter(x => x[col] != null).slice(-90).map(x => [new Date(x[0] + 'T12:00:00').getTime(), x[col]]);
+    if (pts.length >= 3) { g.append(el('h3', 'car-h3', (fuel === 6 ? 'Diésel+' : 'Diésel') + ', evolución')); g.append(grafica([{ nombre: 'Precio', puntos: pts }], 3, ' €')); }
+    else g.append(el('p', 'near-meta', 'La gráfica se irá llenando: el proceso de GitHub guarda el precio de tus favoritas cada día.'));
+    $('favUsar').disabled = !e || e[fuel] == null;
+    $('favDlg').showModal();
+  }
+  $('favCerrar').addEventListener('click', () => $('favDlg').close());
+  $('favQuitar').addEventListener('click', () => {
+    if (!favActual) return;
+    aj.favoritas = (aj.favoritas || []).filter(x => x.k !== favActual.f.k);
+    aj.modificado = new Date().toISOString(); guardarAjLocal(); subirAjustes();
+    $('favDlg').close(); pintarFavs(); if (datos && pos) pintar();
+  });
+  $('favUsar').addEventListener('click', () => {
+    const e = favActual && favActual.e; if (!e) return;
+    precio.value = pr3(e[fuel]); store.set('precio', precio.value);
+    $('estInput').value = marcaDe(e[0]) + ', ' + cap1(e[2]); setSaveFuel(fuel); render();
+    $('favDlg').close(); subVista('repostar'); window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  pintarFavs();
+
+  // ---- Repostar en ruta ----
+  let rutaMapa = null, rutaCapa = null;
+  $('rutaBtn').addEventListener('click', buscarRuta);
+  $('rutaDestino').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarRuta(); } });
+  async function buscarRuta() {
+    const q = $('rutaDestino').value.trim(); if (!q) return;
+    const meta = $('rutaMeta'), ul = $('rutaList');
+    ul.innerHTML = ''; meta.textContent = 'Buscando tu ubicación…';
+    let origen;
+    try { origen = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(p => ok([p.coords.latitude, p.coords.longitude]), mal, { enableHighAccuracy: true, timeout: 15000, maximumAge: 120000 })); }
+    catch (e) { meta.textContent = 'Necesito tu ubicación para calcular la ruta.'; return; }
+    meta.textContent = 'Buscando «' + q + '»…';
+    let dest;
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es,pt,ad,fr&accept-language=es&q=' + encodeURIComponent(q));
+      const j = await r.json();
+      if (!j.length) { meta.textContent = 'No encuentro «' + q + '». Prueba con la ciudad y la provincia.'; return; }
+      dest = { lat: +j[0].lat, lon: +j[0].lon, nombre: j[0].display_name.split(',').slice(0, 2).join(',').trim() };
+    } catch (e) { meta.textContent = 'No se ha podido buscar el destino. Revisa la conexión.'; return; }
+    meta.textContent = 'Calculando la ruta hasta ' + dest.nombre + '…';
+    let ruta, kmTotal, minTotal;
+    try {
+      const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + origen[1] + ',' + origen[0] + ';' + dest.lon + ',' + dest.lat + '?overview=full&geometries=geojson');
+      const j = await r.json();
+      if (!j.routes || !j.routes.length) throw new Error('sin ruta');
+      ruta = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); kmTotal = j.routes[0].distance / 1000; minTotal = j.routes[0].duration / 60;
+    } catch (e) { meta.textContent = 'No se ha podido calcular la ruta ahora mismo. Inténtalo en un rato.'; return; }
+    let d; try { d = await datosPrecios(); } catch (e) { meta.textContent = 'No se han podido cargar los precios.'; return; }
+    // Puntos de la ruta cada ~250 m con su km, en una rejilla para buscar rápido
+    const CEL = 0.02, rej = new Map(), muestras = [];
+    let acum = 0;
+    ruta.forEach((p, i) => {
+      if (i) acum += dist(ruta[i - 1][0], ruta[i - 1][1], p[0], p[1]);
+      if (!muestras.length || acum - muestras[muestras.length - 1].km >= 0.25 || i === ruta.length - 1) {
+        const m = { lat: p[0], lon: p[1], km: acum }; muestras.push(m);
+        const k = Math.floor(p[0] / CEL) + ':' + Math.floor(p[1] / CEL);
+        if (!rej.has(k)) rej.set(k, []); rej.get(k).push(m);
+      }
+    });
+    const cand = [];
+    for (const e of d.estaciones) {
+      if (e[3] == null || e[fuel] == null) continue;
+      const cy = Math.floor(e[3] / CEL), cx = Math.floor(e[4] / CEL);
+      let mejor = null, md = 1.5;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        for (const m of rej.get((cy + dy) + ':' + (cx + dx)) || []) { const km = dist(e[3], e[4], m.lat, m.lon); if (km < md) { md = km; mejor = m; } }
+      }
+      if (mejor) cand.push({ e, km: mejor.km, desvio: md, p: e[fuel] });
+    }
+    // Lo que llevas: el dato del coche si es reciente, si no, el nivel que tengas puesto en la app
+    const cb = coche && coche.combustible, reciente = coche && coche.dato && Date.now() - new Date(coche.dato) < 12 * 36e5;
+    const pct = reciente && cb && cb.pct != null ? cb.pct : Number(nivel.value);
+    const litros = cap * pct / 100, cons = preciosViaje().consumo;
+    const alcance = Math.max(0, (litros - 5) / cons * 100);   // dejando unos 5 L de reserva
+    const llegas = alcance >= kmTotal;
+    if (!cand.length) { meta.textContent = 'No hay gasolineras con ' + (fuel === 6 ? 'diésel+' : 'diésel') + ' a menos de 1,5 km de esta ruta.'; return; }
+    const alcanzables = cand.filter(c => c.km <= alcance);
+    const lista = (alcanzables.length ? alcanzables : cand).sort((a, b) => a.p - b.p || a.km - b.km).slice(0, 8);
+    const media = cand.reduce((s, c) => s + c.p, 0) / cand.length;
+    const durTxtR = min => min >= 60 ? Math.floor(min / 60) + ' h ' + String(Math.round(min % 60)).padStart(2, '0') + ' min' : Math.round(min) + ' min';
+    const llenar = Math.max(0, cap - Math.max(0, litros - lista[0].km * cons / 100));
+    meta.textContent = 'Ruta de ' + nf(kmTotal, 0) + ' km (' + durTxtR(minTotal) + ') hasta ' + dest.nombre + '. Llevas el depósito al ' + nf(pct) + ' % (' + (reciente ? 'dato del coche' : 'nivel puesto en la app') + '): ' +
+      (llegas ? 'llegas sin repostar.' : 'te da para unos ' + nf(alcance, 0) + ' km, así que tendrás que parar.') +
+      ' Hay ' + cand.length + ' gasolineras en el camino; la media es ' + pr3(media) + ' €. Llenando en la más barata ahorras unos ' + eur(Math.max(0, (media - lista[0].p) * llenar)) + ' frente a la media.';
+    lista.forEach((c, i) => {
+      const li = document.createElement('li');
+      const b = el('button', 'st'); b.type = 'button';
+      b.append(el('span', 'name', cap1(c.e[0] || 'Gasolinera')), el('span', 'price' + (i === 0 ? ' best' : ''), pr3(c.p) + ' €'),
+        el('span', 'addr', 'km ' + nf(c.km, 0) + ' · ' + (c.desvio < 1 ? Math.round(c.desvio * 1000) + ' m' : nf(c.desvio, 1) + ' km') + ' de la ruta · ' + cap1(c.e[2])));
+      if (c.km > alcance) b.append(el('span', 'nollega', 'No llegas con lo que llevas'));
+      b.addEventListener('click', () => { if (rutaMapa) rutaMapa.setView([c.e[3], c.e[4]], 14); });
+      const go = el('a', 'go', 'Ir');
+      go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + dest.lat + ',' + dest.lon + '&waypoints=' + c.e[3] + ',' + c.e[4] + '&travelmode=driving';
+      go.target = '_blank'; go.rel = 'noopener'; go.setAttribute('aria-label', 'Ir con parada en ' + cap1(c.e[0]));
+      li.append(b, go); ul.append(li);
+    });
+    $('rutaMapaBox').hidden = false;
+    try { await cargarLeaflet(); } catch (e) { $('rutaMapa').textContent = 'No se ha podido cargar el mapa.'; return; }
+    if (!rutaMapa) {
+      rutaMapa = window.L.map($('rutaMapa'));
+      window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(rutaMapa);
+    }
+    if (rutaCapa) rutaCapa.remove();
+    rutaCapa = window.L.layerGroup().addTo(rutaMapa);
+    const rojo = getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#B8141E';
+    const linea = window.L.polyline(ruta, { color: '#1E88E5', weight: 5, opacity: .8 }).addTo(rutaCapa);
+    lista.forEach((c, i) => window.L.circleMarker([c.e[3], c.e[4]], { radius: i === 0 ? 9 : 7, color: '#fff', weight: 2, fillColor: i === 0 ? '#2E7D32' : rojo, fillOpacity: 1 })
+      .bindTooltip(cap1(c.e[0]) + ' ' + pr3(c.p) + ' €').addTo(rutaCapa));
+    setTimeout(() => { rutaMapa.invalidateSize(); rutaMapa.fitBounds(linea.getBounds(), { padding: [20, 20] }); }, 80);
+  }
   subVista(store.get('subRep') || 'repostar');
 
 
