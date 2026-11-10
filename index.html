@@ -3981,7 +3981,11 @@
       try {
         const r = await MG.llamar('configurarNube', { url: $('nubeUrl').value.trim(), usuario: $('nubeUsuario').value.trim(), carpeta: $('nubeCarpeta').value.trim() || 'Mi Giulia', clave: $('nubeClave').value });
         $('nubeClave').value = ''; rellenar(r);
-        const p = await MG.llamar('probarNube');
+        let seg = 0;
+        const reloj = setInterval(() => { seg++; est.textContent = 'Comprobando… ' + seg + ' s' + (seg >= 10 ? ' (tu Nextcloud está tardando en responder)' : ''); }, 1000);
+        const p = await Promise.race([MG.llamar('probarNube'),
+          new Promise(ok => setTimeout(() => ok({ ok: false, mensaje: 'Tu Nextcloud no responde en 60 segundos. Comprueba que Tailscale está conectado y que la dirección es la de Nextcloud (prueba a abrirla en Chrome del móvil).' }), 60000))]);
+        clearInterval(reloj);
         est.textContent = p.mensaje;
         est.classList.toggle('car-warn', !p.ok);
       } catch (e) { est.textContent = 'Error: ' + (e.message || e); }
