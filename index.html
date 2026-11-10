@@ -570,14 +570,6 @@
     <ul class="st-list" id="favList"></ul>
   </section>
 
-  <section class="near" id="rutaSec">
-    <div class="near-head"><h2>Repostar en ruta</h2></div>
-    <p class="near-meta">Pon a dónde vas y te digo dónde te sale más barato parar por el camino, teniendo en cuenta lo que llevas en el depósito.</p>
-    <div class="ruta-busca"><input id="rutaDestino" type="search" placeholder="Destino: ciudad o dirección" autocomplete="off" enterkeyhint="search"><button type="button" class="near-btn" id="rutaBtn">Buscar</button></div>
-    <p class="near-meta" id="rutaMeta"></p>
-    <div class="mapa-box" id="rutaMapaBox" hidden><div id="rutaMapa" class="vj-mapa"></div></div>
-    <ul class="st-list" id="rutaList"></ul>
-  </section>
 
   <section class="near" id="cmp">
     <div class="near-head">
@@ -634,6 +626,19 @@
         <button type="button" class="near-btn ghost" id="vjTerminar" hidden>Terminar viaje</button>
       </div>
       <div class="car-grid" id="vjResumen"></div>
+    </section>
+    <section class="near" id="rutaSec">
+      <div class="near-head"><h2>Planificar un trayecto</h2></div>
+      <p class="near-meta">Pon a dónde vas: te digo cuánto te costará, dónde te sale más barato repostar por el camino y qué radares te vas a encontrar.</p>
+      <div class="ruta-busca"><input id="rutaDestino" type="search" placeholder="Destino: ciudad o dirección" autocomplete="off" enterkeyhint="search"><button type="button" class="near-btn" id="rutaBtn">Calcular</button></div>
+      <p class="near-meta" id="rutaMeta"></p>
+      <div class="car-grid" id="rutaResumen"></div>
+      <div class="mapa-box" id="rutaMapaBox" hidden><div id="rutaMapa" class="vj-mapa"></div></div>
+      <h3 class="car-h3" id="rutaGasTit" hidden>Gasolineras más baratas en el camino</h3>
+      <p class="near-meta" id="rutaGasMeta"></p>
+      <ul class="st-list" id="rutaList"></ul>
+      <h3 class="car-h3" id="rutaRadTit" hidden>Radares en el camino</h3>
+      <ul class="kv" id="rutaRadList"></ul>
     </section>
     <section class="near">
       <div class="near-head"><h2>Trayectos</h2></div>
@@ -894,7 +899,7 @@
       <li>Toca la <b>☆</b> de una gasolinera en «Gasolineras cercanas» para tenerla en <b>Mis favoritas</b>, con su precio de ahora y cuánto ha subido o bajado en la última semana. Tócala para ver la gráfica de su precio.</li>
       <li>En <b>Ajustes → Notificaciones</b> puedes pedir aviso si el diésel de una favorita baja de un precio, o cuando baje 2 céntimos o más de un día a otro. Usa el combustible habitual de Ajustes.</li>
       <li>El precio de las favoritas se guarda cada día en tu repositorio privado, así que la gráfica se va llenando con el tiempo.</li>
-      <li><b>Repostar en ruta</b>: escribe el destino y te enseña las gasolineras más baratas a menos de 1,5 km del camino, a qué km están y si llegas con lo que llevas en el depósito. «Ir» abre Google Maps con la gasolinera como parada.</li>
+      <li><b>Planificar un trayecto</b> (en <b>Mis viajes</b>): escribe el destino y te dice el coste del trayecto (con tu consumo medio y el precio de tu último repostaje), las gasolineras más baratas a menos de 1,5 km del camino, si llegas con lo que llevas y los radares que hay en la ruta. «Ir» abre Google Maps con la gasolinera como parada.</li>
     </ul>
   </details>
   <details>
@@ -3602,11 +3607,13 @@
   $('rutaDestino').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarRuta(); } });
   async function buscarRuta() {
     const q = $('rutaDestino').value.trim(); if (!q) return;
-    const meta = $('rutaMeta'), ul = $('rutaList');
-    ul.innerHTML = ''; meta.textContent = 'Buscando tu ubicación…';
+    const meta = $('rutaMeta'), ul = $('rutaList'), rl = $('rutaRadList'), res = $('rutaResumen');
+    ul.innerHTML = ''; rl.innerHTML = ''; res.innerHTML = ''; $('rutaGasMeta').textContent = '';
+    $('rutaGasTit').hidden = true; $('rutaRadTit').hidden = true;
+    meta.textContent = 'Buscando tu ubicación…';
     let origen;
     try { origen = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(p => ok([p.coords.latitude, p.coords.longitude]), mal, { enableHighAccuracy: true, timeout: 15000, maximumAge: 120000 })); }
-    catch (e) { meta.textContent = 'Necesito tu ubicación para calcular la ruta.'; return; }
+    catch (e) { meta.textContent = 'Necesito tu ubicación para calcular el trayecto.'; return; }
     meta.textContent = 'Buscando «' + q + '»…';
     let dest;
     try {
@@ -3615,63 +3622,103 @@
       if (!j.length) { meta.textContent = 'No encuentro «' + q + '». Prueba con la ciudad y la provincia.'; return; }
       dest = { lat: +j[0].lat, lon: +j[0].lon, nombre: j[0].display_name.split(',').slice(0, 2).join(',').trim() };
     } catch (e) { meta.textContent = 'No se ha podido buscar el destino. Revisa la conexión.'; return; }
-    meta.textContent = 'Calculando la ruta hasta ' + dest.nombre + '…';
+    meta.textContent = 'Calculando el trayecto hasta ' + dest.nombre + '…';
     let ruta, kmTotal, minTotal;
     try {
       const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + origen[1] + ',' + origen[0] + ';' + dest.lon + ',' + dest.lat + '?overview=full&geometries=geojson');
       const j = await r.json();
       if (!j.routes || !j.routes.length) throw new Error('sin ruta');
       ruta = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); kmTotal = j.routes[0].distance / 1000; minTotal = j.routes[0].duration / 60;
-    } catch (e) { meta.textContent = 'No se ha podido calcular la ruta ahora mismo. Inténtalo en un rato.'; return; }
-    let d; try { d = await datosPrecios(); } catch (e) { meta.textContent = 'No se han podido cargar los precios.'; return; }
-    // Puntos de la ruta cada ~250 m con su km, en una rejilla para buscar rápido
+    } catch (e) { meta.textContent = 'No se ha podido calcular el trayecto ahora mismo. Inténtalo en un rato.'; return; }
+
+    // Puntos de la ruta cada ~250 m con su km y su rumbo, en una rejilla para buscar rápido
     const CEL = 0.02, rej = new Map(), muestras = [];
     let acum = 0;
+    const rumboDe = (a, b) => { const r = Math.PI / 180, y = Math.sin((b[1] - a[1]) * r) * Math.cos(b[0] * r), x = Math.cos(a[0] * r) * Math.sin(b[0] * r) - Math.sin(a[0] * r) * Math.cos(b[0] * r) * Math.cos((b[1] - a[1]) * r); return (Math.atan2(y, x) / r + 360) % 360; };
     ruta.forEach((p, i) => {
       if (i) acum += dist(ruta[i - 1][0], ruta[i - 1][1], p[0], p[1]);
       if (!muestras.length || acum - muestras[muestras.length - 1].km >= 0.25 || i === ruta.length - 1) {
-        const m = { lat: p[0], lon: p[1], km: acum }; muestras.push(m);
+        const m = { lat: p[0], lon: p[1], km: acum, rumbo: i ? rumboDe(ruta[Math.max(0, i - 3)], p) : 0 }; muestras.push(m);
         const k = Math.floor(p[0] / CEL) + ':' + Math.floor(p[1] / CEL);
         if (!rej.has(k)) rej.set(k, []); rej.get(k).push(m);
       }
     });
-    const cand = [];
-    for (const e of d.estaciones) {
-      if (e[3] == null || e[fuel] == null) continue;
-      const cy = Math.floor(e[3] / CEL), cx = Math.floor(e[4] / CEL);
-      let mejor = null, md = 1.5;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        for (const m of rej.get((cy + dy) + ':' + (cx + dx)) || []) { const km = dist(e[3], e[4], m.lat, m.lon); if (km < md) { md = km; mejor = m; } }
-      }
-      if (mejor) cand.push({ e, km: mejor.km, desvio: md, p: e[fuel] });
-    }
+    const cercano = (lat, lon, max) => {
+      const cy = Math.floor(lat / CEL), cx = Math.floor(lon / CEL);
+      let mejor = null, md = max;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) for (const m of rej.get((cy + dy) + ':' + (cx + dx)) || []) { const km = dist(lat, lon, m.lat, m.lon); if (km < md) { md = km; mejor = m; } }
+      return mejor ? { m: mejor, d: md } : null;
+    };
+    const durTxtR = min => min >= 60 ? Math.floor(min / 60) + ' h ' + String(Math.round(min % 60)).padStart(2, '0') + ' min' : Math.round(min) + ' min';
+
+    // Coste del trayecto: tu consumo medio y el precio de tu último repostaje
+    const pv = preciosViaje(), cons = pv.consumo, litrosViaje = kmTotal * cons / 100;
+    res.append(tarjeta('Distancia', nf(kmTotal, 0) + ' km', durTxtR(minTotal) + ' sin paradas'));
+    res.append(tarjeta('Coste del trayecto', pv.ultimo ? eur(litrosViaje * pv.ultimo) : '–',
+      nf(litrosViaje, 1) + ' L' + (pv.ultimo ? ' a ' + pr3(pv.ultimo) + ' €/L (último repostaje)' : ' · guarda un repostaje para calcularlo')));
+    if (pv.ultimo) res.append(tarjeta('Ida y vuelta', eur(litrosViaje * pv.ultimo * 2), nf(litrosViaje * 2, 1) + ' L'));
+    res.append(tarjeta('Consumo usado', nf(cons, 1) + ' L/100 km', pv.consumoReal ? 'tu media real' : 'aproximado (aún sin datos)'));
+
     // Lo que llevas: el dato del coche si es reciente, si no, el nivel que tengas puesto en la app
     const cb = coche && coche.combustible, reciente = coche && coche.dato && Date.now() - new Date(coche.dato) < 12 * 36e5;
     const pct = reciente && cb && cb.pct != null ? cb.pct : Number(nivel.value);
-    const litros = cap * pct / 100, cons = preciosViaje().consumo;
+    const litros = cap * pct / 100;
     const alcance = Math.max(0, (litros - 5) / cons * 100);   // dejando unos 5 L de reserva
     const llegas = alcance >= kmTotal;
-    if (!cand.length) { meta.textContent = 'No hay gasolineras con ' + (fuel === 6 ? 'diésel+' : 'diésel') + ' a menos de 1,5 km de esta ruta.'; return; }
-    const alcanzables = cand.filter(c => c.km <= alcance);
-    const lista = (alcanzables.length ? alcanzables : cand).sort((a, b) => a.p - b.p || a.km - b.km).slice(0, 8);
-    const media = cand.reduce((s, c) => s + c.p, 0) / cand.length;
-    const durTxtR = min => min >= 60 ? Math.floor(min / 60) + ' h ' + String(Math.round(min % 60)).padStart(2, '0') + ' min' : Math.round(min) + ' min';
-    const llenar = Math.max(0, cap - Math.max(0, litros - lista[0].km * cons / 100));
-    meta.textContent = 'Ruta de ' + nf(kmTotal, 0) + ' km (' + durTxtR(minTotal) + ') hasta ' + dest.nombre + '. Llevas el depósito al ' + nf(pct) + ' % (' + (reciente ? 'dato del coche' : 'nivel puesto en la app') + '): ' +
-      (llegas ? 'llegas sin repostar.' : 'te da para unos ' + nf(alcance, 0) + ' km, así que tendrás que parar.') +
-      ' Hay ' + cand.length + ' gasolineras en el camino; la media es ' + pr3(media) + ' €. Llenando en la más barata ahorras unos ' + eur(Math.max(0, (media - lista[0].p) * llenar)) + ' frente a la media.';
-    lista.forEach((c, i) => {
-      const li = document.createElement('li');
-      const b = el('button', 'st'); b.type = 'button';
-      b.append(el('span', 'name', cap1(c.e[0] || 'Gasolinera')), el('span', 'price' + (i === 0 ? ' best' : ''), pr3(c.p) + ' €'),
-        el('span', 'addr', 'km ' + nf(c.km, 0) + ' · ' + (c.desvio < 1 ? Math.round(c.desvio * 1000) + ' m' : nf(c.desvio, 1) + ' km') + ' de la ruta · ' + cap1(c.e[2])));
-      if (c.km > alcance) b.append(el('span', 'nollega', 'No llegas con lo que llevas'));
-      b.addEventListener('click', () => { if (rutaMapa) rutaMapa.setView([c.e[3], c.e[4]], 14); });
-      const go = el('a', 'go', 'Ir');
-      go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + dest.lat + ',' + dest.lon + '&waypoints=' + c.e[3] + ',' + c.e[4] + '&travelmode=driving';
-      go.target = '_blank'; go.rel = 'noopener'; go.setAttribute('aria-label', 'Ir con parada en ' + cap1(c.e[0]));
-      li.append(b, go); ul.append(li);
-    });
+    meta.textContent = 'Hasta ' + dest.nombre + '. Llevas el depósito al ' + nf(pct) + ' % (' + (reciente ? 'dato del coche' : 'nivel puesto en Repostar') + '): ' +
+      (llegas ? 'llegas sin repostar.' : 'te da para unos ' + nf(alcance, 0) + ' km, así que tendrás que parar.');
+
+    // Gasolineras a menos de 1,5 km del camino
+    let lista = [];
+    try {
+      const d = await datosPrecios();
+      const cand = [];
+      for (const e of d.estaciones) {
+        if (e[3] == null || e[fuel] == null) continue;
+        const c = cercano(e[3], e[4], 1.5);
+        if (c) cand.push({ e, km: c.m.km, desvio: c.d, p: e[fuel] });
+      }
+      if (cand.length) {
+        const alcanzables = cand.filter(c => c.km <= alcance);
+        lista = (alcanzables.length ? alcanzables : cand).sort((a, b) => a.p - b.p || a.km - b.km).slice(0, 8);
+        const media = cand.reduce((t, c) => t + c.p, 0) / cand.length;
+        const llenar = Math.max(0, cap - Math.max(0, litros - lista[0].km * cons / 100));
+        $('rutaGasTit').hidden = false;
+        $('rutaGasMeta').textContent = cand.length + ' gasolineras en el camino, media ' + pr3(media) + ' €. Llenando en la más barata ahorras unos ' + eur(Math.max(0, (media - lista[0].p) * llenar)) + ' frente a la media.';
+        lista.forEach((c, i) => {
+          const li = document.createElement('li');
+          const b = el('button', 'st'); b.type = 'button';
+          b.append(el('span', 'name', cap1(c.e[0] || 'Gasolinera')), el('span', 'price' + (i === 0 ? ' best' : ''), pr3(c.p) + ' €'),
+            el('span', 'addr', 'km ' + nf(c.km, 0) + ' · ' + (c.desvio < 1 ? Math.round(c.desvio * 1000) + ' m' : nf(c.desvio, 1) + ' km') + ' de la ruta · ' + cap1(c.e[2])));
+          if (c.km > alcance) b.append(el('span', 'nollega', 'No llegas con lo que llevas'));
+          b.addEventListener('click', () => { if (rutaMapa) rutaMapa.setView([c.e[3], c.e[4]], 14); });
+          const go = el('a', 'go', 'Ir');
+          go.href = 'https://www.google.com/maps/dir/?api=1&destination=' + dest.lat + ',' + dest.lon + '&waypoints=' + c.e[3] + ',' + c.e[4] + '&travelmode=driving';
+          go.target = '_blank'; go.rel = 'noopener'; go.setAttribute('aria-label', 'Ir con parada en ' + cap1(c.e[0]));
+          li.append(b, go); ul.append(li);
+        });
+      } else $('rutaGasMeta').textContent = 'No hay gasolineras con ' + (fuel === 6 ? 'diésel+' : 'diésel') + ' a menos de 1,5 km del camino.';
+    } catch (e) { $('rutaGasMeta').textContent = 'No se han podido cargar los precios.'; }
+
+    // Radares sobre la ruta (y en tu sentido, cuando se sabe)
+    let radEnRuta = [];
+    try {
+      const rd = await cargarRadaresWeb();
+      const angulo = (a, b) => { const x = Math.abs(a - b) % 360; return x > 180 ? 360 - x : x; };
+      for (const r of rd.radares) {
+        const c = cercano(r[1], r[2], 0.15);
+        if (!c) continue;
+        if (r[4] != null && angulo(r[4], c.m.rumbo) > 60) continue;   // controla el sentido contrario
+        radEnRuta.push({ r, km: c.m.km });
+      }
+      radEnRuta.sort((a, b) => a.km - b.km);
+      $('rutaRadTit').hidden = false;
+      $('rutaRadTit').textContent = radEnRuta.length ? radEnRuta.length + (radEnRuta.length === 1 ? ' radar' : ' radares') + ' en el camino' : 'Radares en el camino';
+      if (!radEnRuta.length) rl.append(el('li', null, 'No hay radares fijos ni de tramo conocidos en esta ruta.'));
+      radEnRuta.forEach(x => fila(rl, 'km ' + nf(x.km, 0) + ' · ' + (x.r[0] === 'T' ? 'Tramo' : 'Radar fijo') + (x.r[5] ? ' ' + x.r[5] : ''), x.r[3] ? 'máx ' + x.r[3] + ' km/h' : 'límite ?'));
+    } catch (e) { $('rutaRadTit').hidden = false; rl.append(el('li', null, 'No se ha podido cargar la lista de radares.')); }
+
+    // Mapa: ruta, gasolineras y radares
     $('rutaMapaBox').hidden = false;
     try { await cargarLeaflet(); } catch (e) { $('rutaMapa').textContent = 'No se ha podido cargar el mapa.'; return; }
     if (!rutaMapa) {
@@ -3682,10 +3729,17 @@
     rutaCapa = window.L.layerGroup().addTo(rutaMapa);
     const rojo = getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#B8141E';
     const linea = window.L.polyline(ruta, { color: '#1E88E5', weight: 5, opacity: .8 }).addTo(rutaCapa);
+    radEnRuta.forEach(x => {
+      const r = x.r, txt = (r[0] === 'T' ? 'Tramo' : 'Radar') + (r[3] ? ' · máx ' + r[3] : '') + ' (km ' + nf(x.km, 0) + ')';
+      if (r[0] === 'T' && r[6] != null) window.L.polyline([[r[1], r[2]], [r[6], r[7]]], { color: '#F57C00', weight: 7, opacity: .8 }).bindTooltip(txt).addTo(rutaCapa);
+      window.L.circleMarker([r[1], r[2]], { radius: 6, color: '#fff', weight: 2, fillColor: '#F57C00', fillOpacity: 1 }).bindTooltip(txt).addTo(rutaCapa);
+    });
     lista.forEach((c, i) => window.L.circleMarker([c.e[3], c.e[4]], { radius: i === 0 ? 9 : 7, color: '#fff', weight: 2, fillColor: i === 0 ? '#2E7D32' : rojo, fillOpacity: 1 })
       .bindTooltip(cap1(c.e[0]) + ' ' + pr3(c.p) + ' €').addTo(rutaCapa));
+    window.L.circleMarker(ruta[ruta.length - 1], { radius: 8, color: '#fff', weight: 2, fillColor: '#1E88E5', fillOpacity: 1 }).bindTooltip(dest.nombre).addTo(rutaCapa);
     setTimeout(() => { rutaMapa.invalidateSize(); rutaMapa.fitBounds(linea.getBounds(), { padding: [20, 20] }); }, 80);
   }
+
   subVista(store.get('subRep') || 'repostar');
 
 
