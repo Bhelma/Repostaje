@@ -408,6 +408,14 @@
   .st .nollega { color: var(--warn); font-weight: 700; }
   #rutaList .addr, #favList .addr { white-space: normal; overflow: visible; text-overflow: clip; }
 
+  .adj { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .adj-tit { display: block; color: var(--muted); font-size: .95rem; margin-bottom: 4px; }
+  .adj-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; }
+  .adj-f .link-btn { text-align: left; overflow-wrap: anywhere; }
+  .adj-q { color: var(--muted); flex: none; }
+  #ticketBox { margin: 4px 0 8px; }
+  .h-tic { background: none; border: 0; font-size: 1rem; padding: 0 4px; cursor: pointer; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -545,6 +553,11 @@
       </div>
     </div>
     <datalist id="marcasList"></datalist>
+    <div id="ticketBox" hidden>
+      <button type="button" class="near-btn ghost" id="ticketBtn">📷 Foto del ticket</button>
+      <input type="file" id="ticketIn" accept="image/*" capture="environment" hidden>
+      <p class="near-meta" id="ticketMsg"></p>
+    </div>
     <button type="button" class="near-btn" id="saveBtn">Guardar repostaje</button>
     <p class="near-meta" id="saveMsg"></p>
   </div>
@@ -910,6 +923,9 @@
       <li>También aparecen, sin hacer nada, el próximo <b>cambio de aceite</b> y la <b>revisión oficial</b> que pide el coche.</li>
       <li><b>Libro de mantenimiento</b>: apunta cada cambio, revisión o reparación con fecha, km, taller y precio. Al apuntar un cambio de aceite se fija solo el siguiente; al apuntar la ITV, pasa a la siguiente fecha.</li>
       <li>Se guarda en tu repositorio privado (<code>mantenimiento.json</code>).</li>
+      <li><b>Facturas y tickets</b> (app Android): en cada apunte, «Hacer foto» o «Elegir archivo» (foto o PDF). Se guardan en tu <b>Nextcloud</b> de casa, en <code>Mi Giulia/Facturas/año/</code>; en GitHub solo queda dónde está cada una. Al hacer la foto, el móvil lee el ticket y te propone la fecha y el importe. Para verlas necesitas Tailscale conectado.</li>
+      <li>Al guardar un <b>repostaje</b> también puedes hacer la foto del ticket: rellena el precio y el importe, y se guarda en <code>Mi Giulia/Tickets/año/</code>. En el historial, el 📎 lo abre.</li>
+      <li>Configúralo en <b>Ajustes → Nextcloud</b>: dirección, usuario y una <b>contraseña de aplicación</b> (en Nextcloud: tu foto → Ajustes personales → Seguridad → «Crear nueva contraseña de aplicación»). Se guarda solo en el móvil.</li>
     </ul>
   </details>
   <details>
@@ -1090,6 +1106,17 @@
     <label><span>Taller o sitio</span><input id="mlTaller" type="text" autocomplete="off"></label>
     <label><span>Precio (€)</span><input id="mlPrecio" type="text" inputmode="decimal" autocomplete="off"></label>
     <label class="full"><span>Notas</span><textarea id="mlNotas" placeholder="Aceite usado, referencias, garantía…"></textarea></label>
+  </div>
+  <div class="adj">
+    <span class="adj-tit">Facturas y tickets</span>
+    <div id="mlAdjLista"></div>
+    <div id="mlAdjBotones" style="display:flex;gap:8px;margin-top:6px">
+      <button type="button" class="near-btn ghost" id="mlFoto" style="flex:1">📷 Hacer foto</button>
+      <button type="button" class="near-btn ghost" id="mlArchivo" style="flex:1">📎 Elegir archivo</button>
+    </div>
+    <input type="file" id="mlFotoIn" accept="image/*" capture="environment" hidden>
+    <input type="file" id="mlArchIn" accept="image/*,application/pdf" hidden>
+    <p class="aj-estado" id="mlAdjEstado"></p>
   </div>
   <p class="aj-estado" id="mlMsg"></p>
   <div class="dlg-actions">
@@ -1524,7 +1551,13 @@
       });
       const a = document.createElement('span'); a.className = 'addr';
       a.textContent = fmt(x.litros) + ' L a ' + x.precio.toLocaleString('es-ES', { minimumFractionDigits: 3 }) + ' €/L' + (x.km ? ', ' + x.km.toLocaleString('es-ES') + ' km' : '');
-      d.addEventListener('click', ev => { if (!ev.target.closest('.h-del')) abrirEdicion(x.id); });
+      d.addEventListener('click', ev => { if (!ev.target.closest('.h-del') && !ev.target.closest('.h-tic')) abrirEdicion(x.id); });
+      if (x.ticket && x.ticket.ruta) {
+        const tic = document.createElement('button'); tic.type = 'button'; tic.className = 'h-tic'; tic.textContent = '📎';
+        tic.setAttribute('aria-label', 'Ver el ticket');
+        tic.addEventListener('click', () => { if (typeof abrirAdjunto === 'function' && MG) abrirAdjunto(x.ticket); else alert('El ticket está en tu Nextcloud: ' + x.ticket.ruta); });
+        n.append(' ', tic);
+      }
       d.append(n, pr, del, a); li.appendChild(d); ul.appendChild(li);
     });
   }
@@ -3359,7 +3392,7 @@
     if (!lista.length) lb.append(el('p', 'near-meta', 'Aún no hay nada apuntado. Pulsa «Añadir» para guardar un cambio de aceite, una revisión, neumáticos…'));
     lista.forEach(x => {
       const b = el('button', 'mt-lib'); b.type = 'button';
-      b.append(el('b', null, ML_TIPOS[x.tipo] || 'Mantenimiento'), el('div', 'pr', x.precio ? eur(x.precio) : ''),
+      b.append(el('b', null, (ML_TIPOS[x.tipo] || 'Mantenimiento') + (x.adjuntos && x.adjuntos.length ? ' 📎' : '')), el('div', 'pr', x.precio ? eur(x.precio) : ''),
         el('span', null, [fechaLarga(x.fecha), x.km ? nf(x.km) + ' km' : null, x.taller || null].filter(Boolean).join(' · ') + (x.notas ? ' — ' + x.notas : '')));
       b.addEventListener('click', () => abrirLibro(x));
       lb.append(b);
@@ -3740,6 +3773,220 @@
     setTimeout(() => { rutaMapa.invalidateSize(); rutaMapa.fitBounds(linea.getBounds(), { padding: [20, 20] }); }, 80);
   }
 
+
+  // ---- Nextcloud: facturas del libro y tickets de repostaje ----
+  let nubeCfg = null;
+  const nubeLista = () => !!(MG && nubeCfg && nubeCfg.url && nubeCfg.usuario && nubeCfg.tieneClave);
+  if (MG) MG.llamar('estadoNube').then(r => { nubeCfg = r; pintarAdjuntosUI(); }).catch(() => {});
+  const limpioNombre = s => String(s || '').replace(/[\\/:*?"<>|#%]/g, '-').replace(/\s+/g, ' ').trim();
+
+  // Foto o PDF -> base64 (las fotos se reducen a 2000 px en JPEG para que pesen poco)
+  function prepararArchivo(file) {
+    return new Promise((ok, mal) => {
+      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+        const fr = new FileReader();
+        fr.onload = () => ok({ b64: String(fr.result).split(',')[1], tipo: 'application/pdf', ext: '.pdf', imagen: false });
+        fr.onerror = () => mal(new Error('No se ha podido leer el archivo'));
+        fr.readAsDataURL(file); return;
+      }
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        ok({ b64: cv.toDataURL('image/jpeg', 0.85).split(',')[1], tipo: 'image/jpeg', ext: '.jpg', imagen: true });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error('No es una imagen válida')); };
+      img.src = url;
+    });
+  }
+
+  // Busca en el texto del ticket la fecha, el importe, los litros y el precio por litro
+  function analizarTicket(t) {
+    const txt = String(t || '').replace(/\r/g, ''), lineas = txt.split('\n');
+    const n = s => parseFloat(String(s).replace(',', '.'));
+    const r = {};
+    for (const m of txt.matchAll(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/g)) {
+      let [, d, mo, a] = m; d = +d; mo = +mo; a = +a; if (a < 100) a += 2000;
+      if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12 && a >= 2015 && a <= 2100) { r.fecha = a + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0'); break; }
+    }
+    const pre = txt.match(/(\d[.,]\d{3})\s*(?:€|eur)?\s*\/\s*l/i) || txt.match(/(?:precio|p\.?\s*unit|€\/l|eur\/l)[^\d\n]{0,20}(\d[.,]\d{3})/i);
+    if (pre) { const v = n(pre[1]); if (v > 0.8 && v < 3.5) r.precio = v; }
+    const lit = txt.match(/(\d{1,3}[.,]\d{2,3})\s*(?:l\b|lt\b|lts|litros)/i) || txt.match(/(?:litros|volumen|cantidad)[^\d\n]{0,20}(\d{1,3}[.,]\d{2,3})/i);
+    if (lit) { const v = n(lit[1]); if (v > 0.5 && v < 200) r.litros = v; }
+    let mejor = 0;
+    lineas.forEach(l => { if (/total|importe|a pagar|efectivo|tarjeta|visa|cobrado/i.test(l)) for (const m of l.matchAll(/(\d{1,4}[.,]\d{2})(?!\d)/g)) { const v = n(m[1]); if (v > mejor && v < 3000) mejor = v; } });
+    if (!mejor) for (const m of txt.matchAll(/(\d{1,4}[.,]\d{2})(?!\d)/g)) { const v = n(m[1]); if (v > mejor && v < 3000) mejor = v; }
+    if (mejor) r.importe = mejor;
+    return r;
+  }
+  async function leerTicketDe(arch) {
+    if (!MG || !arch.imagen) return null;
+    try { const r = await MG.llamar('leerTicket', { base64: arch.b64 }); return analizarTicket(r.texto); } catch (e) { return null; }
+  }
+  async function subirANube(ruta, arch) {
+    await MG.llamar('subirNube', { ruta, base64: arch.b64, tipo: arch.tipo });
+    return { ruta, tipo: arch.tipo, nombre: ruta.split('/').pop() };
+  }
+  const abrirAdjunto = a => MG.llamar('abrirNube', { ruta: a.ruta, tipo: a.tipo || '*/*' }).catch(e => alert('No se ha podido abrir: ' + (e.message || e) + '\n¿Tienes Tailscale conectado?'));
+
+  // --- En el libro de mantenimiento ---
+  let mlAdj = [], mlPend = [];
+  function pintarAdjuntosUI() {
+    const lista = $('mlAdjLista'); if (!lista) return;
+    lista.innerHTML = '';
+    $('mlAdjBotones').hidden = !MG;
+    if (!MG) { $('mlAdjEstado').textContent = 'Las facturas se adjuntan desde la app Android.'; return; }
+    if (!nubeLista()) $('mlAdjEstado').textContent = 'Para adjuntar facturas, configura tu Nextcloud en Ajustes.';
+    mlAdj.forEach((a, i) => {
+      const f = el('div', 'adj-f');
+      const v = el('button', 'link-btn', (a.tipo === 'application/pdf' ? '📄 ' : '🖼️ ') + a.nombre); v.type = 'button';
+      v.addEventListener('click', () => abrirAdjunto(a));
+      const q = el('button', 'link-btn adj-q', 'Quitar'); q.type = 'button';
+      q.addEventListener('click', () => { if (confirm('¿Quitar esta factura del apunte? (El archivo se queda en tu Nextcloud.)')) { mlAdj.splice(i, 1); pintarAdjuntosUI(); } });
+      f.append(v, q); lista.append(f);
+    });
+    mlPend.forEach((a, i) => {
+      const f = el('div', 'adj-f');
+      f.append(el('span', null, (a.imagen ? '🖼️ ' : '📄 ') + 'Nueva (se sube al guardar)'));
+      const q = el('button', 'link-btn adj-q', 'Quitar'); q.type = 'button';
+      q.addEventListener('click', () => { mlPend.splice(i, 1); pintarAdjuntosUI(); });
+      f.append(q); lista.append(f);
+    });
+    $('mlFoto').disabled = $('mlArchivo').disabled = !nubeLista();
+  }
+  const abrirLibroOrig = abrirLibro;
+  abrirLibro = function (x) {
+    mlAdj = x && x.adjuntos ? x.adjuntos.slice() : []; mlPend = []; $('mlAdjEstado').textContent = '';
+    abrirLibroOrig(x); pintarAdjuntosUI();
+  };
+  async function añadirAdjuntoLibro(file) {
+    if (!file) return;
+    const est = $('mlAdjEstado');
+    try {
+      est.textContent = 'Preparando…';
+      const arch = await prepararArchivo(file);
+      mlPend.push(arch); pintarAdjuntosUI();
+      est.textContent = arch.imagen ? 'Leyendo el ticket…' : 'Listo: se subirá al guardar.';
+      const t = await leerTicketDe(arch);
+      if (t && (t.fecha || t.importe)) {
+        const puesto = [];
+        if (t.fecha) { $('mlFecha').value = t.fecha; puesto.push('fecha ' + fechaLarga(t.fecha)); }
+        if (t.importe && !parse($('mlPrecio').value)) { $('mlPrecio').value = fmt(t.importe); puesto.push('importe ' + eur(t.importe)); }
+        est.textContent = puesto.length ? 'He leído en el ticket: ' + puesto.join(' e ') + '. Revísalo antes de guardar.' : 'Listo: se subirá al guardar.';
+      } else if (arch.imagen) est.textContent = 'No he podido leer los datos del ticket; rellénalos tú. Se subirá al guardar.';
+    } catch (e) { est.textContent = e.message || String(e); }
+  }
+  $('mlFotoIn').addEventListener('change', e => { añadirAdjuntoLibro(e.target.files[0]); e.target.value = ''; });
+  $('mlArchIn').addEventListener('change', e => { añadirAdjuntoLibro(e.target.files[0]); e.target.value = ''; });
+  $('mlFoto').addEventListener('click', () => $('mlFotoIn').click());
+  $('mlArchivo').addEventListener('click', () => $('mlArchIn').click());
+  // Antes de guardar el apunte, se suben las facturas nuevas; si falla, no se guarda para que puedas reintentar
+  $('mlGuardar').addEventListener('click', async ev => {
+    if (!mlPend.length) return;   // sin facturas nuevas: guarda como siempre
+    ev.stopImmediatePropagation();
+    const est = $('mlAdjEstado'), fecha = $('mlFecha').value || hoyISO();
+    const base = (nubeCfg.carpeta || 'Mi Giulia') + '/Facturas/' + fecha.slice(0, 4) + '/' + fecha + ' ' + limpioNombre(ML_TIPOS[$('mlTipo').value] || 'Mantenimiento') + ($('mlTaller').value.trim() ? ' - ' + limpioNombre($('mlTaller').value) : '');
+    $('mlGuardar').disabled = true;
+    try {
+      for (let i = 0; i < mlPend.length; i++) {
+        est.textContent = 'Subiendo a tu Nextcloud' + (mlPend.length > 1 ? ' (' + (i + 1) + ' de ' + mlPend.length + ')' : '') + '…';
+        const ruta = base + (mlAdj.length + i ? ' (' + (mlAdj.length + i + 1) + ')' : '') + mlPend[i].ext;
+        mlAdj.push(await subirANube(ruta, mlPend[i]));
+      }
+      mlPend = [];
+    } catch (e) {
+      est.textContent = 'No se ha podido subir: ' + (e.message || e) + ' No he guardado el apunte; inténtalo de nuevo.';
+      $('mlGuardar').disabled = false; pintarAdjuntosUI(); return;
+    }
+    $('mlGuardar').disabled = false;
+    $('mlGuardar').click();   // ahora sí, guardado normal (con los adjuntos)
+  }, true);
+  // El guardado normal recoge los adjuntos
+  const mtGuardarLocalOrig = mtGuardarLocal;
+  $('mlGuardar').addEventListener('click', () => {
+    const x = mt.libro.slice().sort((a, b) => (b.mod || 0) - (a.mod || 0))[0];
+    if (x && !$('mtLibroDlg').open && Date.now() - (x.mod || 0) < 3000) { x.adjuntos = mlAdj.slice(); mtGuardarLocalOrig(); pintarMant(); programarMant(); }
+  });
+
+  // --- En los repostajes: foto del ticket ---
+  let ticketPend = null;
+  if (MG) {
+    $('ticketBox').hidden = false;
+    $('ticketBtn').addEventListener('click', () => {
+      if (!nubeLista()) { $('ticketMsg').textContent = 'Configura antes tu Nextcloud en Ajustes para guardar los tickets.'; return; }
+      $('ticketIn').click();
+    });
+    $('ticketIn').addEventListener('change', async e => {
+      const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+      const msg = $('ticketMsg');
+      try {
+        msg.textContent = 'Leyendo el ticket…';
+        ticketPend = await prepararArchivo(file);
+        const t = await leerTicketDe(ticketPend);
+        const puesto = [];
+        if (t) {
+          let pr = t.precio, im = t.importe;
+          if (!pr && im && t.litros) pr = Math.round(im / t.litros * 1000) / 1000;
+          if (pr) { precio.value = fmt(pr, 3); store.set('precio', precio.value); puesto.push(fmt(pr, 3) + ' €/L'); }
+          if (im) { importe.value = fmt(im); puesto.push(eur(im)); }
+          if (t.litros) puesto.push(fmt(t.litros) + ' L');
+          render();
+        }
+        msg.textContent = (puesto.length ? 'He leído: ' + puesto.join(', ') + '. Revísalo. ' : 'No he podido leer los datos; rellénalos tú. ') + 'El ticket se guardará en tu Nextcloud al guardar el repostaje.';
+        $('ticketBtn').textContent = '📷 Cambiar foto del ticket';
+      } catch (err) { msg.textContent = err.message || String(err); ticketPend = null; }
+    });
+    // Tras guardar el repostaje, se sube el ticket y se apunta en el repostaje
+    $('saveBtn').addEventListener('click', async () => {
+      if (!ticketPend) return;
+      const arch = ticketPend; ticketPend = null;
+      $('ticketBtn').textContent = '📷 Foto del ticket'; $('ticketMsg').textContent = 'Subiendo el ticket a tu Nextcloud…';
+      const arr = leer(), x = arr.slice().sort((a, b) => (b.mod || 0) - (a.mod || 0))[0];
+      if (!x || Date.now() - (x.mod || 0) > 5000) { $('ticketMsg').textContent = ''; return; }
+      const f = x.fecha.slice(0, 10), h = new Date(x.fecha).toTimeString().slice(0, 5).replace(':', '');
+      const ruta = (nubeCfg.carpeta || 'Mi Giulia') + '/Tickets/' + f.slice(0, 4) + '/' + f + ' ' + h + (x.estacion ? ' ' + limpioNombre(x.estacion) : '') + arch.ext;
+      try {
+        x.ticket = await subirANube(ruta, arch); x.mod = Date.now();
+        guardar(arr); pintarHist();
+        $('ticketMsg').textContent = 'Ticket guardado en tu Nextcloud.';
+      } catch (e) { $('ticketMsg').textContent = 'El repostaje se ha guardado, pero el ticket no se ha podido subir: ' + (e.message || e); }
+    });
+  }
+
+  // --- Ajustes → Nextcloud ---
+  if (MG && document.querySelector('.bt-auto')) {
+    const dv = document.createElement('div');
+    dv.innerHTML = '<h3>Nextcloud (facturas y tickets)</h3>' +
+      '<p class="aj-estado" id="nubeEstado">Las facturas y tickets se guardan en tu Nextcloud de casa, a través de Tailscale. En GitHub solo se apunta dónde está cada una.</p>' +
+      '<div class="ed-grid">' +
+      '<label class="full"><span>Dirección</span><input id="nubeUrl" type="text" autocomplete="off" placeholder="http://100.101.43.52:8080"></label>' +
+      '<label><span>Usuario</span><input id="nubeUsuario" type="text" autocomplete="off" placeholder="bhelma"></label>' +
+      '<label><span>Carpeta</span><input id="nubeCarpeta" type="text" autocomplete="off" placeholder="Mi Giulia"></label>' +
+      '<label class="full"><span>Contraseña de aplicación de Nextcloud</span><input id="nubeClave" type="password" autocomplete="off"></label>' +
+      '</div><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="near-btn ghost" id="nubeProbar" style="flex:1">Guardar y probar</button></div>';
+    document.querySelector('.bt-auto').appendChild(dv);
+    const rellenar = r => {
+      nubeCfg = r;
+      $('nubeUrl').value = r.url || 'http://100.101.43.52:8080'; $('nubeUsuario').value = r.usuario || 'bhelma';
+      $('nubeCarpeta').value = r.carpeta || 'Mi Giulia'; $('nubeClave').placeholder = r.tieneClave ? '•••••• (guardada; escribe otra para cambiarla)' : 'Créala en Nextcloud → Ajustes personales → Seguridad';
+      pintarAdjuntosUI();
+    };
+    MG.llamar('estadoNube').then(rellenar).catch(() => {});
+    $('nubeProbar').addEventListener('click', async () => {
+      const est = $('nubeEstado');
+      est.textContent = 'Comprobando…';
+      try {
+        const r = await MG.llamar('configurarNube', { url: $('nubeUrl').value.trim(), usuario: $('nubeUsuario').value.trim(), carpeta: $('nubeCarpeta').value.trim() || 'Mi Giulia', clave: $('nubeClave').value });
+        $('nubeClave').value = ''; rellenar(r);
+        const p = await MG.llamar('probarNube');
+        est.textContent = p.mensaje;
+        est.classList.toggle('car-warn', !p.ok);
+      } catch (e) { est.textContent = 'Error: ' + (e.message || e); }
+    });
+  }
   subVista(store.get('subRep') || 'repostar');
 
 
