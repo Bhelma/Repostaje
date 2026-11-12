@@ -416,6 +416,54 @@
   #ticketBox { margin: 4px 0 8px; }
   .h-tic { background: none; border: 0; font-size: 1rem; padding: 0 4px; cursor: pointer; }
 
+  /* ===== Reorganización: botones claros, Inicio y menos scroll ===== */
+  .link-btn { display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid var(--red); border-radius: 999px; padding: 6px 14px; color: var(--red); background: transparent; font-weight: 700; font-size: .92rem; line-height: 1.2; min-height: 34px; }
+  .link-btn:active { background: var(--red); color: #fff; }
+  .link-btn:disabled { opacity: .45; }
+  .adj-q, .mt-hecha { border-color: var(--line); color: var(--muted); }
+  .mt-hecha { color: var(--red); border-color: var(--red); margin-top: 8px; }
+  .near-head { gap: 10px; flex-wrap: wrap; }
+  .tabs button { font-size: .8rem; padding: 6px 0 4px; min-width: 0; }
+  .tabs button svg { width: 24px; height: 24px; }
+  .tabs { gap: 2px; }
+  #vInicio .ini-card { margin-top: 12px; }
+  .ini-card .near-head { flex-wrap: nowrap; }
+  .ini-card .near-head h2 { font-size: 1.15rem; min-width: 0; }
+  .ini-card .near-head .link-btn { flex: none; }
+  .ini-accesos .near-btn { font-size: .95rem; padding: 12px 6px; }
+  .ini-hero { margin: 0 -16px; padding: 4px 16px 14px; background: linear-gradient(to bottom, transparent 62%, var(--bg) 100%), radial-gradient(120% 75% at 50% 18%, var(--hero-top) 0%, var(--hero-bot) 100%); cursor: pointer; }
+  .ini-hero img { display: block; width: 86%; height: auto; margin: 0 auto; }
+  .ini-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .ini-pie .hero-meta { margin: 0; }
+  .ini-mapa { height: 160px; margin-top: 8px; }
+  .ini-ir { display: block; text-align: center; text-decoration: none; margin-top: 8px; }
+  .ini-vig { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+  .ini-vig .near-btn { width: auto; margin: 0; padding: 10px 18px; }
+  .ini-mando { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .ini-mando .near-btn { margin: 0; padding: 10px 4px; font-size: .95rem; }
+  .ini-fila { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; margin-top: 8px; }
+  .ini-txt { flex: 1; min-width: 0; }
+  .ini-txt b { display: block; }
+  .ini-txt span { display: block; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mt-falta.barata { color: #2E7D32; }
+  .ini-accesos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .ini-accesos .near-btn { margin: 0; }
+  .mas-info { margin-top: 14px; }
+  .mas-info > summary, .aj-grupo > summary { list-style: none; cursor: pointer; font-weight: 700; font-size: 1.1rem; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); display: flex; justify-content: space-between; align-items: center; }
+  .mas-info > summary::-webkit-details-marker, .aj-grupo > summary::-webkit-details-marker { display: none; }
+  .mas-info > summary::after, .aj-grupo > summary::after { content: "▾"; color: var(--red); font-size: 1.1rem; transition: transform .2s; }
+  .mas-info[open] > summary::after, .aj-grupo[open] > summary::after { transform: rotate(180deg); }
+  .aj-grupo { margin-top: 10px; }
+  .aj-grupo > summary { background: var(--bg); padding: 12px 14px; border-radius: 12px; }
+  .aj-grupo[open] { padding-bottom: 6px; }
+  .aj-grupo > *:not(summary) { margin-left: 2px; margin-right: 2px; }
+  .mas-menu { display: grid; gap: 10px; margin-bottom: 4px; }
+  .mas-item { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; align-items: center; text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; cursor: pointer; }
+  .mas-item span { grid-row: 1 / span 2; font-size: 1.6rem; }
+  .mas-item b { font-size: 1.15rem; }
+  .mas-item small { color: var(--muted); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { .mas-info > summary::after, .aj-grupo > summary::after { transition: none; } }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -473,10 +521,11 @@
     </div>
   </header>
 
+  <div id="vInicio" hidden><div id="inicio"></div></div>
+
   <div id="vRep">
   <div class="subtabs" id="repTabs" role="tablist" aria-label="Repostaje">
-    <button type="button" class="on" data-s="repostar" role="tab" aria-selected="true">Repostar</button>
-    <button type="button" data-s="viajes" role="tab" aria-selected="false">Mis viajes</button>
+    <button type="button" class="on" data-s="viajes" role="tab" aria-selected="true">Mis viajes</button>
     <button type="button" data-s="radares" role="tab" aria-selected="false">Radares</button>
   </div>
   <div id="sRepostar">
@@ -723,7 +772,7 @@
       <div class="car-btns" id="carBtns"></div>
       <p class="near-meta car-orden" id="carOrden"></p>
     </section>
-    <div id="carBottom"></div>
+    <details class="mas-info"><summary>Más información del coche</summary><div id="carBottom"></div></details>
     </div>
 
     <div id="sMant" hidden>
@@ -742,6 +791,10 @@
   </div>
 
   <div id="vMan" hidden>
+    <div class="mas-menu">
+      <button type="button" class="mas-item" id="masAjustes"><span>⚙️</span><b>Ajustes</b><small>Avisos, vigilancia, Bluetooth, calendario, Nextcloud…</small></button>
+      <button type="button" class="mas-item" id="masAyuda"><span>❓</span><b>Ayuda</b><small>Cómo funciona cada parte de la app</small></button>
+    </div>
     <section class="near">
       <div class="near-head"><h2>Manuales del coche</h2></div>
       <p class="near-meta" style="margin-top:6px">Pregunta con tus palabras: busca en el manual del Giulia y en el del sistema multimedia y te enseña las páginas.</p>
@@ -771,18 +824,11 @@
 </dialog>
 
 <nav class="tabs" id="tabs" aria-label="Secciones">
-  <button type="button" data-v="rep">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4"/><path d="M14 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/></svg>
-    Repostaje
-  </button>
-  <button type="button" data-v="car">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16v-3.5l2.5-5A2 2 0 0 1 6.3 6.5h9.2a2 2 0 0 1 1.6.8l3.2 4.2 1.7.7V16"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/></svg>
-    Mi Giulia
-  </button>
-  <button type="button" data-v="man">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h5"/></svg>
-    Manuales
-  </button>
+  <button type="button" data-v="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Inicio</button>
+  <button type="button" data-v="rep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4"/><path d="M14 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/></svg>Repostar</button>
+  <button type="button" data-v="viajes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Viajes</button>
+  <button type="button" data-v="car"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16v-3.5l2.5-5A2 2 0 0 1 6.3 6.5h9.2a2 2 0 0 1 1.6.8l3.2 4.2 1.7.7V16"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/></svg>Coche</button>
+  <button type="button" data-v="man"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>Más</button>
 </nav>
 
 <dialog id="editDlg" class="sheet">
@@ -1046,7 +1092,7 @@
 
   <h3>App</h3>
   <div class="aj-row"><span>Al abrir</span>
-    <div class="toggle" id="ajPestana" role="group" aria-label="Pestaña al abrir"><button type="button" data-v="ultima">Última</button><button type="button" data-v="rep">Repostaje</button><button type="button" data-v="car">Mi Giulia</button></div>
+    <div class="toggle" id="ajPestana" role="group" aria-label="Pestaña al abrir"><button type="button" data-v="ultima">Última</button><button type="button" data-v="inicio">Inicio</button><button type="button" data-v="rep">Repostar</button></div>
   </div>
   <div class="aj-row"><span>Tema</span>
     <div class="toggle" id="ajTema" role="group" aria-label="Tema"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Claro</button><button type="button" data-v="dark">Oscuro</button></div>
@@ -1952,7 +1998,7 @@
   }
 
   async function cargarCoche(forzar) {
-    if (!cfg()) { pintarCoche(); return; }
+    if (!cfg()) { pintarCoche(); try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {} return; }
     if (!forzar && Date.now() - cocheLeido < 60000) return;
     cocheLeido = Date.now();
     try {
@@ -1964,6 +2010,7 @@
       cocheMsg = e && e.status ? errorTexto(e.status) : 'Sin conexión: muestro los últimos datos guardados.';
     }
     pintarCoche();
+    try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {}
   }
 
   const CIERRES = [
@@ -2485,7 +2532,7 @@
       if (a.datos) {
         const remoto = a.datos;
         if (!aj.modificado || (remoto.modificado && remoto.modificado > aj.modificado)) {
-          aj = fusion(AJ_DEF, remoto); guardarAjLocal(); aplicarTema(); pintarCoche(); try { pintarFavs(); } catch (e) {}
+          aj = fusion(AJ_DEF, remoto); guardarAjLocal(); aplicarTema(); pintarCoche(); try { pintarFavs(); } catch (e) {} try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {}
         } else aj.suscripciones = remoto.suscripciones || [];
       }
     } catch (e) {}
@@ -2579,10 +2626,17 @@
     $('vigBtn').disabled = true;
     pintarVigilancia('Guardando…');
     await cargarAjustesRemotos();
-    const u = coche && coche.ubicacion;
+    let u = coche && coche.ubicacion;
+    if (activar) {
+      // Centro: donde estás tú ahora (al lado del coche), si el GPS lo da con precisión; si no, la última posición del coche
+      try {
+        const p = await new Promise((ok, mal) => navigator.geolocation.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }));
+        if (p.coords.accuracy <= 100) u = { lat: p.coords.latitude, lon: p.coords.longitude, hora: new Date().toISOString(), fuente: 'movil' };
+      } catch (e) {}
+    }
     if (activar && !(u && u.lat != null)) { pintarVigilancia('Aún no tengo la posición del coche: pulsa Actualizar en Estado.'); return; }
     const vg = { ...(aj.vigilancia || {}) };
-    if (activar) Object.assign(vg, { activa: true, desde: new Date().toISOString(), centro: { lat: u.lat, lon: u.lon, hora: u.hora } });
+    if (activar) Object.assign(vg, { activa: true, desde: new Date().toISOString(), centro: { lat: u.lat, lon: u.lon, hora: u.hora, fuente: u.fuente || 'coche' } });
     else vg.activa = false;
     aj.vigilancia = vg; aj.modificado = new Date().toISOString(); guardarAjLocal();
     const r = await subirAjustes();
@@ -2855,22 +2909,29 @@
 
   // ---- Pestañas: Repostaje / Mi Giulia ----
   function vista(v, sinScroll) {
-    v = v === 'car' || v === 'man' ? v : 'rep';
+    v = ['inicio', 'rep', 'viajes', 'car', 'man'].includes(v) ? v : 'inicio';
     store.set('vista', v);
-    $('vRep').hidden = v !== 'rep'; $('vCar').hidden = v !== 'car'; $('vMan').hidden = v !== 'man';
-    $('titulo').textContent = v === 'car' ? 'Mi Giulia' : v === 'man' ? 'Manuales' : 'Repostaje';
+    const cont = v === 'viajes' ? 'rep' : v;
+    $('vInicio').hidden = cont !== 'inicio'; $('vRep').hidden = cont !== 'rep'; $('vCar').hidden = cont !== 'car'; $('vMan').hidden = cont !== 'man';
+    $('titulo').textContent = { inicio: 'Mi Giulia', rep: 'Repostar', viajes: 'Viajes', car: 'Coche', man: 'Más' }[v];
     $('capBtn').hidden = v !== 'rep';
+    $('repTabs').hidden = v !== 'viajes';
     document.querySelectorAll('#tabs button').forEach(b => {
       const on = b.dataset.v === v; b.classList.toggle('on', on);
       if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     if (!sinScroll) window.scrollTo(0, 0);
-    if (v === 'car') cargarCoche();
+    try {
+      if (v === 'rep') subVista('repostar');
+      if (v === 'viajes') { const sv = store.get('subRep'); subVista(sv === 'radares' ? 'radares' : 'viajes'); }
+    } catch (e) {}
+    if (v === 'car' || v === 'inicio') cargarCoche();
     if (v === 'man') cargarManuales();
+    if (v === 'inicio') { try { pintarInicio(); } catch (e) {} }
   }
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
-  const hashVista = { giulia: 'car', coche: 'car', repostaje: 'rep', manuales: 'man' }[location.hash.slice(1)];
-  vista(hashVista || (aj.app.pestana === 'ultima' ? store.get('vista') : aj.app.pestana) || 'rep', true);
+  const hashVista = { inicio: 'inicio', giulia: 'car', coche: 'car', repostaje: 'rep', repostar: 'rep', viajes: 'viajes', manuales: 'man', mas: 'man' }[location.hash.slice(1)];
+  vista(hashVista || (aj.app.pestana === 'ultima' ? store.get('vista') : aj.app.pestana) || 'inicio', true);
 
   if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 
@@ -2962,7 +3023,7 @@
   try { viajes = JSON.parse(store.get('viajesCache')) || []; } catch (e) {}
   function subVista(sv) {
     sv = sv === 'viajes' || sv === 'radares' ? sv : 'repostar';
-    store.set('subRep', sv);
+    if (sv !== 'repostar') store.set('subRep', sv);
     $('sRepostar').hidden = sv !== 'repostar'; $('sViajes').hidden = sv !== 'viajes'; $('sRadares').hidden = sv !== 'radares';
     if (sv === 'radares') pintarRadares();
     document.querySelectorAll('#repTabs button').forEach(b => { const on = b.dataset.s === sv; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
@@ -3139,7 +3200,7 @@
     });
     MG.escuchar('accion', d => {
       const a = d && d.accion;
-      if (a === 'viajes') { vista('rep'); subVista('viajes'); }
+      if (a === 'viajes') { vista('viajes'); subVista('viajes'); }
       else if (a === 'viajes_cambiados') cargarViajes(true);
     });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !$('sViajes').hidden) cargarViajes(true); });
@@ -3991,8 +4052,180 @@
       } catch (e) { est.textContent = 'Error: ' + (e.message || e); }
     });
   }
-  subVista(store.get('subRep') || 'repostar');
+  if (store.get('vista') === 'viajes') subVista(store.get('subRep') === 'radares' ? 'radares' : 'viajes'); else if (store.get('vista') === 'rep') subVista('repostar');
 
+
+  // ---- Inicio: todo lo importante de un vistazo ----
+  function bloqueIni(titulo, irA, txtBoton) {
+    const s = el('section', 'near ini-card'), h = el('div', 'near-head');
+    h.append(el('h2', null, titulo));
+    if (irA) { const b = el('button', 'link-btn', txtBoton || 'Ver todo'); b.type = 'button'; b.addEventListener('click', irA); h.append(b); }
+    s.append(h); return s;
+  }
+  function filaIni(tit, sub, derecha, nivel, alPulsar) {
+    const f = el(alPulsar ? 'button' : 'div', 'ini-fila'); if (alPulsar) { f.type = 'button'; f.addEventListener('click', alPulsar); }
+    const t = el('div', 'ini-txt'); t.append(el('b', null, tit)); if (sub) t.append(el('span', null, sub));
+    f.append(t); if (derecha) f.append(el('div', 'mt-falta' + (nivel ? ' ' + nivel : ''), derecha));
+    return f;
+  }
+  function pintarInicio() {
+    const box = $('inicio'); if (!box) return;
+    box.innerHTML = '';
+    const c = coche || {}, cb = c.combustible || {};
+
+    // 1. El coche
+    const hero = el('section', 'ini-hero');
+    const img = el('img'); img.src = 'icons/giulia.webp'; img.alt = 'Tu Giulia'; img.width = 1000; img.height = 539;
+    const datosH = el('div', 'hero-datos');
+    const dato = (t, v, alerta) => { const d = el('div'); d.append(el('span', null, t)); const s = el('strong', alerta ? 'alerta' : null, v); d.append(s); return d; };
+    const ac = aj.aceite, faltaAc = c.km != null && ac.proximo_km ? ac.proximo_km - c.km : null;
+    datosH.append(dato('Odómetro', c.km != null ? nf(c.km) + ' km' : '–'),
+      dato('Depósito', cb.pct != null ? nf(cb.pct) + ' %' : '–', !!cb.bajo),
+      dato('Aceite en', faltaAc == null ? '–' : faltaAc > 0 ? nf(faltaAc) + ' km' : 'ya', faltaAc != null && faltaAc <= (ac.antelacion_km || 0)));
+    const pie = el('div', 'ini-pie');
+    pie.append(el('span', 'hero-meta', orden ? 'Actualizando los datos del coche…' : c.dato ? 'Datos del coche ' + cuando(c.dato) + '.' : 'Aún no hay datos del coche.'));
+    const act = el('button', 'link-btn', '↻ Actualizar'); act.type = 'button'; act.disabled = !!orden || !cfg();
+    act.addEventListener('click', () => { enviarOrden('estado'); setTimeout(pintarInicio, 300); });
+    pie.append(act);
+    hero.append(img, datosH, pie);
+    hero.addEventListener('click', ev => { if (!ev.target.closest('button')) { vista('car'); subCar('estado'); } });
+    box.append(hero);
+
+    // 2. Dónde está aparcado (móvil al aparcar o posición del coche, la más reciente)
+    let u = c.ubicacion, deMovil = false;
+    try {
+      const vu = (JSON.parse(store.get('viajesCache')) || []).find(v => v && v.hasta && v.hasta.length === 2 && v.fin);
+      if (vu && (!u || u.lat == null || !u.hora || new Date(vu.fin) > new Date(u.hora))) { u = { lat: vu.hasta[0], lon: vu.hasta[1], hora: vu.fin }; deMovil = true; }
+    } catch (e) {}
+    if (u && u.lat != null) {
+      const s = bloqueIni('Dónde está aparcado', () => { vista('car'); subCar('estado'); }, 'Ver en Coche');
+      s.append(el('p', 'near-meta', (deMovil ? 'Según tu móvil al aparcar, ' : 'Según el coche, ') + cuando(u.hora) + '.'));
+      const f = document.createElement('iframe'); f.className = 'map ini-mapa'; f.loading = 'lazy'; f.title = 'Dónde está el coche'; f.referrerPolicy = 'no-referrer-when-downgrade';
+      f.src = 'https://maps.google.com/maps?q=' + u.lat + ',' + u.lon + '&z=16&t=' + (store.get('mapaTipo') === 'k' ? 'k' : 'm') + '&hl=es&output=embed';
+      const ir = el('a', 'near-btn ghost ini-ir', 'Ir al coche'); ir.href = 'https://www.google.com/maps/dir/?api=1&destination=' + u.lat + ',' + u.lon + '&travelmode=walking'; ir.target = '_blank'; ir.rel = 'noopener';
+      s.append(f, ir); box.append(s);
+    }
+
+    // 3. Vigilancia y mando
+    const sv = bloqueIni('Vigilancia y mando');
+    const vg = aj.vigilancia || {}, on = !!vg.activa;
+    const filaV = el('div', 'ini-vig');
+    filaV.append(el('span', 'vig-estado' + (on ? ' on' : ''), on ? 'Vigilancia activa' : 'Vigilancia apagada'));
+    const bv = el('button', 'near-btn' + (on ? ' ghost' : ''), on ? 'Desactivar' : 'Activar'); bv.type = 'button'; bv.disabled = !cfg();
+    bv.addEventListener('click', async () => { bv.disabled = true; await ponerVigilancia(!on); pintarInicio(); });
+    filaV.append(bv); sv.append(filaV);
+    const mando = el('div', 'ini-mando');
+    [['cerrar', '🔒 Cerrar'], ['abrir', '🔓 Abrir'], ['luces', '💡 Luces']].forEach(([k, t]) => {
+      const b = el('button', 'near-btn ghost', t); b.type = 'button'; b.disabled = !!orden || !cfg();
+      b.addEventListener('click', () => { vista('car'); subCar('estado'); enviarOrden(k); });
+      mando.append(b);
+    });
+    sv.append(mando); box.append(sv);
+
+    // 4. Lo próximo: aceite, fechas del calendario, revisión y avisos del coche
+    const prox = [];
+    if (faltaAc != null) prox.push({ o: faltaAc / 40, tit: 'Cambio de aceite', sub: 'a los ' + nf(ac.proximo_km) + ' km', der: faltaAc > 0 ? nf(faltaAc) + ' km' : 'toca ya', niv: faltaAc <= 0 ? 'urge' : faltaAc <= (ac.antelacion_km || 500) ? 'aviso' : '' });
+    let mtl = {}; try { mtl = JSON.parse(store.get('mant')) || {}; } catch (e) {}
+    (mtl.fechas || []).forEach(f => {
+      const d = Math.round((new Date(f.fecha + 'T12:00:00') - new Date(new Date().toDateString())) / 864e5);
+      prox.push({ o: d, tit: f.tipo === 'otro' ? f.nombre || 'Fecha' : ({ itv: 'ITV', seguro: 'Seguro', impuesto: 'Impuesto de circulación' })[f.tipo] || 'Fecha',
+        sub: new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        der: d < 0 ? 'vencida' : d === 0 ? 'hoy' : d < 60 ? 'en ' + d + ' días' : 'en ' + Math.round(d / 30.4) + ' meses', niv: d <= 7 ? 'urge' : d <= (f.avisar || 30) ? 'aviso' : '' });
+    });
+    const rv = c.revision || {};
+    if (rv.km != null) prox.push({ o: rv.km / 40, tit: 'Revisión oficial', sub: 'la pide el coche', der: nf(rv.km) + ' km', niv: rv.km < 1000 ? 'aviso' : '' });
+    (c.neumaticos || []).filter(n => n.aviso || (n.estado && n.estado !== 'NORMAL')).forEach(n => prox.push({ o: -100, tit: 'Neumático con aviso', sub: ({ FL: 'Delantera izquierda', FR: 'Delantera derecha', RL: 'Trasera izquierda', RR: 'Trasera derecha' })[n.rueda] || '', der: n.bar != null ? nf(n.bar, 2) + ' bar' : '', niv: 'urge' }));
+    if (cb.bajo) prox.push({ o: -90, tit: 'Combustible en reserva', sub: cb.litros != null ? nf(cb.litros) + ' L en el depósito' : '', der: '', niv: 'urge' });
+    if (prox.length) {
+      const sp = bloqueIni('Lo próximo', () => { vista('car'); subCar('mant'); }, 'Mantenimiento');
+      prox.sort((a, b) => a.o - b.o).slice(0, 4).forEach(p => sp.append(filaIni(p.tit, p.sub, p.der, p.niv)));
+      box.append(sp);
+    }
+
+    // 5. Último viaje
+    try {
+      const v = (JSON.parse(store.get('viajesCache')) || [])[0];
+      if (v) {
+        const s = bloqueIni('Último viaje', () => { vista('viajes'); subVista('viajes'); });
+        const ruta = v.origen && v.destino ? v.origen.split(',').pop().trim() + ' → ' + v.destino.split(',').pop().trim() : 'Viaje';
+        const pv = typeof preciosViaje === 'function' ? preciosViaje() : null;
+        const coste = pv && pv.ultimo ? ' · ' + eur(v.km * pv.consumo / 100 * pv.ultimo) : '';
+        s.append(filaIni(ruta, new Date(v.inicio).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' +
+          new Date(v.inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + coste, nf(v.km, 1) + ' km'));
+        box.append(s);
+      }
+    } catch (e) {}
+
+    // 6. Diésel en tus favoritas
+    if ((aj.favoritas || []).length) {
+      const s = bloqueIni('Tus gasolineras', () => { vista('rep'); setTimeout(() => { try { $('favSec').scrollIntoView({ block: 'start' }); } catch (e) {} }, 100); });
+      const caja = el('div'); caja.append(el('p', 'near-meta', 'Cargando precios…')); s.append(caja); box.append(s);
+      datosPrecios().then(d => {
+        caja.innerHTML = '';
+        aj.favoritas.map(f => ({ f, e: estacionDe(f, d) })).filter(x => x.e && x.e[fuel] != null).sort((a, b) => a.e[fuel] - b.e[fuel]).slice(0, 3)
+          .forEach((x, i) => caja.append(filaIni(x.f.nombre, x.f.dir || '', pr3(x.e[fuel]) + ' €', i === 0 ? 'barata' : '')));
+        if (!caja.childElementCount) caja.append(el('p', 'near-meta', 'Sin precio hoy para tus favoritas.'));
+      }).catch(() => { caja.innerHTML = ''; caja.append(el('p', 'near-meta', 'No se han podido cargar los precios.')); });
+    }
+
+    // 7. Accesos rápidos
+    const acc = el('div', 'ini-accesos');
+    [['⛽ Repostar', () => vista('rep')], ['🧭 Planificar viaje', () => { vista('viajes'); subVista('viajes'); setTimeout(() => { try { $('rutaDestino').focus(); } catch (e) {} }, 200); }],
+     ['🔧 Mantenimiento', () => { vista('car'); subCar('mant'); }], ['📡 Radares', () => { vista('viajes'); subVista('radares'); }]].forEach(([t, fn]) => {
+      const b = el('button', 'near-btn ghost', t); b.type = 'button'; b.addEventListener('click', fn); acc.append(b);
+    });
+    box.append(acc);
+  }
+
+  // Al abrir la app: si hace rato que no se pregunta a Alfa, se pide una lectura (como mucho, una cada hora)
+  function autoActualizar() {
+    try {
+      if (!cfg() || orden || document.visibilityState !== 'visible') return;
+      const ult = Number(store.get('autoAct') || 0), dato = coche && coche.consultado ? new Date(coche.consultado).getTime() : 0;
+      if (Date.now() - Math.max(ult, dato) < 60 * 60e3) return;
+      store.set('autoAct', String(Date.now()));
+      enviarOrden('estado');
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { autoActualizar(); if (!$('vInicio').hidden) pintarInicio(); } });
+
+  // Ajustes ordenados por grupos plegables
+  function agruparAjustes() {
+    const dlg = $('ajDlg');
+    let cambia = true;
+    while (cambia) {
+      cambia = false;
+      [...dlg.children].forEach(c => {
+        if (c.tagName === 'DIV' && (c.classList.contains('aj-resto') || c.classList.contains('bt-auto') || c.querySelector(':scope > h3'))) {
+          while (c.firstChild) dlg.insertBefore(c.firstChild, c);
+          c.remove(); cambia = true;
+        }
+      });
+    }
+    let grupo = null;
+    [...dlg.childNodes].forEach(n => {
+      if (n.nodeType === 1 && (n.id === 'ajMsg' || n.classList.contains('dlg-actions') || n.id === 'ajTitulo')) { grupo = null; return; }
+      if (n.nodeType === 1 && n.tagName === 'H3') {
+        grupo = document.createElement('details'); grupo.className = 'aj-grupo';
+        const sm = document.createElement('summary'); sm.textContent = n.textContent; grupo.append(sm);
+        dlg.insertBefore(grupo, n); n.remove(); return;
+      }
+      if (grupo) grupo.append(n);
+    });
+    dlg.querySelectorAll('details.aj-grupo').forEach(d => {
+      if (d.querySelector('#ajAceiteKm')) d.id = 'grpAceite'; else d.classList.add('aj-resto');
+    });
+  }
+  try { agruparAjustes(); } catch (e) {}
+  const abrirAjustesOrig = abrirAjustes;
+  abrirAjustes = function (seccion) {
+    abrirAjustesOrig(seccion);
+    const g = $('grpAceite'); if (g) g.open = seccion === 'aceite';
+  };
+  $('masAjustes').addEventListener('click', () => abrirAjustes());
+  $('masAyuda').addEventListener('click', () => $('helpDlg').showModal());
+  try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {}
+  setTimeout(autoActualizar, 2500);
 
   render();
 })();
