@@ -1,6 +1,6 @@
 name: Actualizar radares
 
-# Una vez por semana: radares de la DGT + OpenStreetMap -> data/radares.json
+# Lunes y jueves: radares de la DGT + OpenStreetMap -> data/radares.json
 on:
   schedule:
     - cron: "37 4 * * 1,4"   # lunes y jueves a las 04:37 UTC
@@ -16,14 +16,14 @@ concurrency:
 jobs:
   radares:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Descargar radares
-        run: python scripts/radares.py
+        run: python -u scripts/radares.py
       - name: Guardar cambios
         run: |
           git config user.name "github-actions[bot]"
