@@ -464,6 +464,18 @@
   .mas-item small { color: var(--muted); font-size: .92rem; }
   @media (prefers-reduced-motion: reduce) { .mas-info > summary::after, .aj-grupo > summary::after { transition: none; } }
 
+  .vj-item.sel { border-color: var(--red); background: var(--red-soft); box-shadow: inset 4px 0 0 var(--red); }
+  .vj-dia.clic { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); }
+  .vj-suma { position: fixed; left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 25; display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 2px solid var(--red); border-radius: 16px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  .vj-suma-txt { flex: 1; min-width: 0; }
+  .vj-suma-txt b { display: block; font-size: 1.02rem; }
+  .vj-suma-txt span { display: block; color: var(--muted); font-size: .9rem; }
+  .vj-suma-btns { display: flex; flex-direction: column; gap: 6px; }
+  .rad-boton { font-size: 1.15rem; padding: 16px; margin: 4px 0 12px; }
+  .rad-boton.on { background: none; color: var(--red); border: 2px solid var(--red); }
+  #sViajes { padding-bottom: 90px; }
+
   /* Pestañas */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
   /* Manuales */
@@ -527,6 +539,16 @@
   <div class="subtabs" id="repTabs" role="tablist" aria-label="Repostaje">
     <button type="button" class="on" data-s="viajes" role="tab" aria-selected="true">Mis viajes</button>
     <button type="button" data-s="radares" role="tab" aria-selected="false">Radares</button>
+  </div>
+  <div class="subtabs" id="depTabs" role="tablist" aria-label="Repostar" hidden>
+    <button type="button" class="on" data-t="calc" role="tab" aria-selected="true">Repostar</button>
+    <button type="button" data-t="dep" role="tab" aria-selected="false">Depósito</button>
+  </div>
+  <div id="sDeposito" hidden>
+    <section class="near">
+      <div class="near-head"><h2>¿Cuánto queda de verdad?</h2></div>
+      <div id="depBox"></div>
+    </section>
   </div>
   <div id="sRepostar">
   <section class="gauge" aria-live="polite">
@@ -703,7 +725,7 @@
       <ul class="kv" id="rutaRadList"></ul>
     </section>
     <section class="near">
-      <div class="near-head"><h2>Trayectos</h2></div>
+      <div class="near-head"><h2>Trayectos</h2><button type="button" class="link-btn" id="vjSelBtn">Sumar viajes</button></div>
       <p class="near-meta" id="vjPrecios"></p>
       <div class="vj-lista" id="vjLista"></div>
     </section>
@@ -714,15 +736,14 @@
       <div class="near-head"><h2>Avisador de radares</h2><span class="vig-estado" id="radEstadoTag">Apagado</span></div>
       <p class="near-meta" id="radEstado"></p>
       <div id="radControles" hidden>
+        <button type="button" class="near-btn rad-boton" id="radBoton">Activar avisador</button>
         <div class="aj-list">
-          <label class="chk"><input type="checkbox" id="radOn"> Avisarme de los radares</label>
-          <label class="chk"><input type="checkbox" id="radAuto"> Encenderlo solo al conectar con el Bluetooth del coche</label>
           <label class="chk"><input type="checkbox" id="radVoz"> Aviso por voz («Radar fijo a 500 metros, máximo 100»)</label>
           <label class="chk"><input type="checkbox" id="radPit"> Pitidos al acercarme (más seguidos cuanto más cerca, y urgentes si voy rápido)</label>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button type="button" class="near-btn ghost" id="radProbar" style="flex:1">Probar aviso</button>
-          <button type="button" class="near-btn ghost" id="radAhora" style="flex:1">Encender ahora</button>
+
         </div>
       </div>
     </section>
@@ -822,6 +843,11 @@
     <button type="button" class="mv-btn" id="mvSig">Siguiente ›</button>
   </div>
 </dialog>
+
+<div class="vj-suma" id="vjSuma" hidden>
+  <div class="vj-suma-txt"><b id="vjSumaTit"></b><span id="vjSumaTxt"></span></div>
+  <div class="vj-suma-btns"><button type="button" class="link-btn" id="vjSumaTodos">Todos</button><button type="button" class="link-btn" id="vjSumaCerrar">Cerrar</button></div>
+</div>
 
 <nav class="tabs" id="tabs" aria-label="Secciones">
   <button type="button" data-v="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Inicio</button>
@@ -949,7 +975,8 @@
       <li>En los <b>tramos</b> te dice tu velocidad media al terminar, y te avisa si la llevas por encima del máximo.</li>
       <li>El <b>límite</b> sale de OpenStreetMap: en algunos radares no se conoce y solo dirá la distancia.</li>
       <li>Los <b>radares móviles</b> no los puede saber ninguna lista. Los avisadores como este son legales; los detectores e inhibidores, no.</li>
-      <li>Se enciende al conectar el Bluetooth del coche (el mismo que la vigilancia) y se apaga al desconectar. También puedes encenderlo a mano.</li>
+      <li><b>Siempre empieza apagado.</b> Actívalo con el botón (en Viajes → Radares o en Inicio) cuando lo necesites; se apaga solo al acabar el viaje (al desconectar el Bluetooth del coche) o con «Desactivar radares» en la notificación.</li>
+      <li>Solo avisa de los radares de tu sentido: en autovías el sentido sale de la calzada en la que está cada radar, y si al acercarte el radar queda en la calzada de enfrente, se calla.</li>
     </ul>
   </details>
   <details>
@@ -2097,7 +2124,7 @@
     return ((cocheHist && cocheHist.registros) || []).filter(r => r && r.t && new Date(r.t).getTime() >= desde && cond(r));
   }
   // Gráfica de líneas sencilla en SVG: series = [{nombre, puntos: [[t, valor], …]}]
-  function grafica(series, dec, unidad, guias) {
+  function grafica(series, dec, unidad, guias, xFmt) {
     const W = 340, H = 150, ml = 38, mr = 8, mt = 8, mb = 22;
     const todos = series.flatMap(s => s.puntos);
     let y0 = Math.min(...todos.map(p => p[1]), ...(guias || [])), y1 = Math.max(...todos.map(p => p[1]), ...(guias || []));
@@ -2111,7 +2138,7 @@
       svg += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" class="g-lin"/><text x="' + (ml - 4) + '" y="' + (Y(v) + 4).toFixed(1) + '" class="g-txt" text-anchor="end">' + nf(v, dec) + '</text>';
     });
     (guias || []).forEach(v => { svg += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" class="g-guia"/>'; });
-    const dia = t => new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    const dia = xFmt || (t => new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
     svg += '<text x="' + ml + '" y="' + (H - 6) + '" class="g-txt">' + dia(x0) + '</text><text x="' + (W - mr) + '" y="' + (H - 6) + '" class="g-txt" text-anchor="end">' + dia(x1) + '</text>';
     series.forEach((s, i) => {
       const pts = s.puntos.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' ');
@@ -3039,7 +3066,7 @@
     const c = consumo(leer());
     return { ultimo: ul ? ul.precio : null, media: litros > 0 ? euros / litros : null, consumo: c || 6.0, consumoReal: !!c };
   }
-  const costeDe = (v, pr) => { const l = (v.km || 0) * pr.consumo / 100; return { litros: l, ultimo: pr.ultimo ? l * pr.ultimo : null, media: pr.media ? l * pr.media : null }; };
+  let costeDe = (v, pr) => { const l = (v.km || 0) * pr.consumo / 100; return { litros: l, ultimo: pr.ultimo ? l * pr.ultimo : null, media: pr.media ? l * pr.media : null }; };
   const horaDe = iso => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const durTxt = min => min >= 60 ? Math.floor(min / 60) + ' h ' + String(Math.round(min % 60)).padStart(2, '0') + ' min' : Math.round(min) + ' min';
 
@@ -3084,7 +3111,7 @@
       res.append(tarjeta('Gasóleo del mes', pr.ultimo ? eur(eurMes) : '–', pr.ultimo ? 'con el precio del último depósito' : 'guarda un repostaje para calcularlo'));
     }
     $('vjPrecios').textContent = viajes.length
-      ? 'Coste estimado con tu consumo ' + (pr.consumoReal ? 'medio de ' : 'aproximado de ') + nf(pr.consumo, 1) + ' L/100 km' +
+      ? 'Coste estimado con tu consumo medio de ' + nf(pr.consumo, 1) + ' L/100 km (' + fuenteTxt(pr) + ')' +
         (pr.ultimo ? ', a ' + nf(pr.ultimo, 3) + ' €/L (último depósito)' : '') + (pr.media ? ' y a ' + nf(pr.media, 3) + ' €/L (tu precio medio).' : '.')
       : '';
 
@@ -3148,7 +3175,7 @@
     fila(ul, 'Distancia', nf(v.km, 1) + ' km');
     if (v.vmedia) fila(ul, 'Velocidad media en marcha', nf(v.vmedia, 0) + ' km/h');
     if (v.vmax) fila(ul, 'Velocidad máxima', nf(v.vmax, 0) + ' km/h');
-    fila(ul, 'Gasóleo estimado', nf(c.litros, 2) + ' L (' + nf(pr.consumo, 1) + ' L/100 km' + (pr.consumoReal ? ', tu media' : ', aproximado') + ')');
+    fila(ul, c.delCoche ? 'Gasóleo (según el coche)' : 'Gasóleo estimado', nf(c.litros, c.delCoche ? 0 : 2) + ' L (' + nf(pr.consumo, 1) + ' L/100 km' + ', ' + fuenteTxt(pr) + ')' + (c.delCoche ? ' · litros medidos por el coche' : ''));
     fila(ul, 'Coste (último depósito)', c.ultimo != null ? eur(c.ultimo) + ' a ' + nf(pr.ultimo, 3) + ' €/L' : 'sin repostajes guardados');
     fila(ul, 'Coste (precio medio)', c.media != null ? eur(c.media) + ' a ' + nf(pr.media, 3) + ' €/L' : 'sin repostajes guardados');
     $('vjBorrar').hidden = !MG;
@@ -3257,35 +3284,24 @@
     }
     MG.llamar('estadoRadares').then(st => {
       radNat = st;
-      $('radOn').checked = !!st.on; $('radAuto').checked = st.auto !== false; $('radVoz').checked = st.voz !== false; $('radPit').checked = st.pitidos !== false;
-      ['radAuto', 'radVoz', 'radPit'].forEach(id => { $(id).disabled = !st.on; });
-      tag.textContent = st.on ? (st.activo ? 'Sonando' : 'Activado') : 'Apagado';
-      tag.classList.toggle('on', !!st.on);
-      const lista = st.cuantos ? nf(st.cuantos) + ' radares en la lista' + (st.fecha ? ' (del ' + st.fecha + ')' : '') + '.' : 'La lista de radares se descarga al encenderlo la primera vez.';
-      est.textContent = !st.on ? 'Apagado. ' + lista
-        : !st.permisoGps ? 'Falta el permiso de ubicación. Pulsa «Encender ahora» para concederlo.'
-        : (st.auto ? (st.bt ? 'Se enciende solo al conectar con «' + st.bt + '». ' : 'Elige el Bluetooth del coche en Ajustes → Vigilancia automática. ') : 'Enciéndelo con «Encender ahora». ') +
-          (st.auto && !st.permisoFondo ? '⚠ Falta «Permitir todo el tiempo» en la ubicación. ' : '') + lista +
-          ' Primer aviso ' + (st.seg || 30) + ' s antes (entre ' + nf(st.min || 300) + ' y ' + nf(st.max || 1000) + ' m); las distancias se cambian en Ajustes.';
-      $('radAhora').hidden = !st.on || !!st.activo;
-      $('radProbar').disabled = !st.on;
+      $('radVoz').checked = st.voz !== false; $('radPit').checked = st.pitidos !== false;
+      const on = !!st.activo;
+      tag.textContent = on ? 'Activo' : 'Apagado'; tag.classList.toggle('on', on);
+      const bt = $('radBoton'); bt.textContent = on ? 'Desactivar avisador' : 'Activar avisador'; bt.classList.toggle('on', on);
+      const viejo = st.fecha && (() => { const [d, m, a] = st.fecha.split('/').map(Number); return Date.now() - new Date(a, m - 1, d) > 10 * 864e5; })();
+      const lista = st.cuantos ? nf(st.cuantos) + ' radares en la lista (del ' + st.fecha + ')' + (viejo ? ' ⚠ lista antigua: pulsa «Actualizar lista»' : '') + '.' : 'La lista se descarga al activarlo la primera vez.';
+      est.textContent = (on ? 'Te avisa por voz hasta que lo desactives o termine el viaje (al desconectar el Bluetooth del coche). '
+        : 'Siempre empieza apagado. Actívalo cuando lo necesites; se apaga solo al acabar el viaje. ') + lista +
+        ' Primer aviso ' + (st.seg || 30) + ' s antes (entre ' + nf(st.min || 300) + ' y ' + nf(st.max || 1000) + ' m); las distancias se cambian en Ajustes.';
+      $('radProbar').disabled = false;
     }).catch(() => {});
   }
   if (MG) {
     const ign = () => {};
     const conf = o => MG.llamar('configurarRadares', o).then(() => pintarRadares()).catch(ign);
-    $('radOn').addEventListener('change', async () => {
-      if ($('radOn').checked) { try { await MG.llamar('permisosViajes'); } catch (e) {} }
-      conf({ on: $('radOn').checked });
-    });
-    $('radAuto').addEventListener('change', () => conf({ auto: $('radAuto').checked }));
     $('radVoz').addEventListener('change', () => conf({ voz: $('radVoz').checked }));
     $('radPit').addEventListener('change', () => conf({ pitidos: $('radPit').checked }));
     $('radProbar').addEventListener('click', () => { MG.llamar('probarRadar').catch(ign); $('radEstado').textContent = 'Escucha: debería sonar «Radar fijo a 500 metros. Máximo 100».'; });
-    $('radAhora').addEventListener('click', async () => {
-      try { const st = await MG.llamar('permisosViajes'); if (!st.permisoGps) return; await MG.llamar('iniciarRadares'); } catch (e) { $('radEstado').textContent = 'No se ha podido encender: ' + (e.message || e); return; }
-      setTimeout(pintarRadares, 1500);
-    });
     $('radActualizar').addEventListener('click', async () => {
       $('radDatos').textContent = 'Descargando la lista de radares…';
       try { const r = await MG.llamar('actualizarRadares'); $('radDatos').textContent = r.ok ? 'Lista actualizada: ' + nf(r.cuantos) + ' radares (del ' + r.fecha + ').' : 'No se ha podido descargar ahora; se usa la lista guardada.'; } catch (e) {}
@@ -3751,7 +3767,7 @@
     res.append(tarjeta('Coste del trayecto', pv.ultimo ? eur(litrosViaje * pv.ultimo) : '–',
       nf(litrosViaje, 1) + ' L' + (pv.ultimo ? ' a ' + pr3(pv.ultimo) + ' €/L (último repostaje)' : ' · guarda un repostaje para calcularlo')));
     if (pv.ultimo) res.append(tarjeta('Ida y vuelta', eur(litrosViaje * pv.ultimo * 2), nf(litrosViaje * 2, 1) + ' L'));
-    res.append(tarjeta('Consumo usado', nf(cons, 1) + ' L/100 km', pv.consumoReal ? 'tu media real' : 'aproximado (aún sin datos)'));
+    res.append(tarjeta('Consumo usado', nf(cons, 1) + ' L/100 km', fuenteTxt(pv)));
 
     // Lo que llevas: el dato del coche si es reciente, si no, el nivel que tengas puesto en la app
     const cb = coche && coche.combustible, reciente = coche && coche.dato && Date.now() - new Date(coche.dato) < 12 * 36e5;
@@ -4107,7 +4123,7 @@
     }
 
     // 3. Vigilancia y mando
-    const sv = bloqueIni('Vigilancia y mando');
+    const sv = bloqueIni('Vigilancia, mando y radares');
     const vg = aj.vigilancia || {}, on = !!vg.activa;
     const filaV = el('div', 'ini-vig');
     filaV.append(el('span', 'vig-estado' + (on ? ' on' : ''), on ? 'Vigilancia activa' : 'Vigilancia apagada'));
@@ -4120,7 +4136,15 @@
       b.addEventListener('click', () => { vista('car'); subCar('estado'); enviarOrden(k); });
       mando.append(b);
     });
-    sv.append(mando); box.append(sv);
+    sv.append(mando);
+    if (MG) {
+      const rb = el('button', 'near-btn' + (radNat && radNat.activo ? ' ghost' : ''), radNat && radNat.activo ? '📡 Desactivar radares' : '📡 Activar radares'); rb.type = 'button';
+      rb.style.marginTop = '10px';
+      rb.addEventListener('click', () => $('radBoton').click());
+      sv.append(rb);
+      if (!radNat) MG.llamar('estadoRadares').then(st => { radNat = st; rb.textContent = st.activo ? '📡 Desactivar radares' : '📡 Activar radares'; rb.classList.toggle('ghost', !!st.activo); }).catch(() => {});
+    }
+    box.append(sv);
 
     // 4. Lo próximo: aceite, fechas del calendario, revisión y avisos del coche
     const prox = [];
@@ -4226,6 +4250,191 @@
   $('masAyuda').addEventListener('click', () => $('helpDlg').showModal());
   try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {}
   setTimeout(autoActualizar, 2500);
+
+  // ===== Consumo real según el coche (lecturas de Alfa: km y litros en cada lectura) =====
+  // Suma lo que baja el depósito entre lecturas mientras suben los km (los repostajes, que lo suben, no cuentan).
+  function consumoCoche(dias) {
+    const regs = ((cocheHist && cocheHist.registros) || []).filter(r => r && r.t && r.km != null && r.l != null)
+      .sort((a, b) => a.t.localeCompare(b.t));
+    const desde = Date.now() - (dias || 120) * 864e5;
+    let km = 0, l = 0;
+    for (let i = 1; i < regs.length; i++) {
+      const a = regs[i - 1], b = regs[i];
+      if (new Date(b.t).getTime() < desde) continue;
+      const dk = b.km - a.km, dl = a.l - b.l;
+      if (dk > 0 && dk < 1500 && dl >= 0) { km += dk; l += dl; }
+    }
+    return km >= 150 && l > 0 ? { l100: l / km * 100, km, l } : null;
+  }
+  // Litros reales de un viaje, si hay lecturas del coche justo antes y justo después (solo viajes largos:
+  // el coche da los litros sin decimales)
+  function litrosViajeCoche(v) {
+    if (!v || !(v.km >= 40)) return null;
+    const regs = ((cocheHist && cocheHist.registros) || []).filter(r => r && r.t && r.km != null && r.l != null).sort((a, b) => a.t.localeCompare(b.t));
+    const ini = new Date(v.inicio).getTime(), fin = new Date(v.fin).getTime();
+    let a = null, b = null;
+    for (const r of regs) { const t = new Date(r.t).getTime(); if (t <= ini + 120e3) a = r; else if (!b && t >= fin - 120e3 && t <= fin + 6 * 36e5) b = r; }
+    if (!a || !b) return null;
+    const dk = b.km - a.km;
+    if (dk < v.km * 0.85 || dk > v.km * 1.25 + 2 || a.l < b.l) return null;
+    return a.l - b.l;
+  }
+  const preciosViajeBase = preciosViaje;
+  preciosViaje = function () {
+    const r = preciosViajeBase(), cc = consumoCoche();
+    if (cc) { r.consumo = cc.l100; r.consumoReal = true; r.fuente = 'coche'; }
+    else r.fuente = r.consumoReal ? 'repostajes' : 'aprox';
+    return r;
+  };
+  const costeDeBase = costeDe;
+  costeDe = function (v, pr) {
+    const lc = litrosViajeCoche(v);
+    if (lc == null) return costeDeBase(v, pr);
+    return { litros: lc, ultimo: pr.ultimo ? lc * pr.ultimo : null, media: pr.media ? lc * pr.media : null, delCoche: true };
+  };
+  const fuenteTxt = pr => pr.fuente === 'coche' ? 'según el coche' : pr.fuente === 'repostajes' ? 'según tus repostajes' : 'aproximado';
+
+  // ===== Repostar → Depósito: lo que debería quedar contra lo que dice el coche =====
+  function pintarDeposito() {
+    const box = $('depBox'); if (!box) return;
+    box.innerHTML = '';
+    if (!cocheHist && cfg()) { box.append(el('p', 'near-meta', 'Cargando las lecturas del coche…')); cargarCoche(true).then(pintarDeposito); return; }
+    const reps = leer().filter(x => x.litros > 0).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const regs = ((cocheHist && cocheHist.registros) || []).filter(r => r && r.t && r.l != null && r.km != null).sort((a, b) => a.t.localeCompare(b.t));
+    const ult = reps[reps.length - 1];
+    if (!ult) { box.append(el('p', 'near-meta', 'Guarda un repostaje para poder comparar.')); return; }
+    if (!regs.length) { box.append(el('p', 'near-meta', 'Aún no hay lecturas del coche. Pulsa Actualizar en Inicio.')); return; }
+    const tRep = new Date(ult.fecha).getTime();
+    // Punto de partida: la primera lectura del coche después del repostaje (litros y km reales); si no hay, lo apuntado
+    const tras = regs.find(r => new Date(r.t).getTime() >= tRep - 10 * 60e3 && new Date(r.t).getTime() <= tRep + 12 * 36e5);
+    const antes = [...regs].reverse().find(r => new Date(r.t).getTime() < tRep);
+    const capR = ult.cap || cap;
+    const lAntes = antes ? antes.l : capR * (ult.nivel || 0) / 100;
+    const lSalida = Math.min(capR, lAntes + ult.litros);
+    const kmSalida = ult.km || (tras ? tras.km : antes ? antes.km : null);
+    const ahora = regs[regs.length - 1];
+    if (kmSalida == null || new Date(ahora.t).getTime() < tRep) { box.append(el('p', 'near-meta', 'Aún no hay lecturas del coche posteriores a tu último repostaje.')); return; }
+    const km = Math.max(0, ahora.km - kmSalida);
+    const pr = preciosViaje(), consRep = consumo(leer());
+    const esperado = c => Math.max(0, lSalida - km * c / 100);
+    const real = ahora.l;
+    const consReal = km >= 30 ? (lSalida - real) / km * 100 : null;
+
+    box.append(el('p', 'near-meta', 'Desde tu último repostaje (' + new Date(ult.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) +
+      (ult.estacion ? ', ' + ult.estacion : '') + '): saliste con ' + nf(lSalida, 0) + ' L' + (lSalida >= capR - 0.5 ? ' (lleno)' : '') + ' y has hecho ' + nf(km, 0) + ' km. Última lectura del coche ' + cuando(ahora.t) + '.'));
+    const g = el('div', 'car-grid');
+    g.append(tarjeta('Según el coche', nf(real, 0) + ' L', (ahora.pct != null ? nf(ahora.pct, 0) + ' % del depósito' : '') + ' · dato de Alfa'));
+    g.append(tarjeta('Según la app', nf(esperado(pr.consumo), 0) + ' L', 'con ' + nf(pr.consumo, 1) + ' L/100 km (' + fuenteTxt(pr) + ')'));
+    if (consRep && Math.abs(consRep - pr.consumo) > 0.2) g.append(tarjeta('Con tus repostajes', nf(esperado(consRep), 0) + ' L', 'con ' + nf(consRep, 1) + ' L/100 km'));
+    if (consReal != null) g.append(tarjeta('Consumo real de este depósito', nf(consReal, 1) + ' L/100 km', nf(lSalida - real, 0) + ' L en ' + nf(km, 0) + ' km', consReal > pr.consumo + 1));
+    box.append(g);
+    const dif = real - esperado(pr.consumo);
+    box.append(el('p', 'near-meta' + (Math.abs(dif) > 4 ? ' car-warn' : ''), Math.abs(dif) <= 2 ? 'La app y el coche coinciden (±2 L).'
+      : dif < 0 ? 'Al coche le quedan ' + nf(-dif, 0) + ' L menos de lo que calcula la app: estás gastando más que la media que usa la app.'
+      : 'Al coche le quedan ' + nf(dif, 0) + ' L más de lo que calcula la app: estás gastando menos que la media.'));
+    // Gráfica: litros reales en cada lectura contra la recta esperada
+    const pts = regs.filter(r => new Date(r.t).getTime() >= tRep - 60e3 && r.km >= kmSalida);
+    if (pts.length >= 2) {
+      box.append(el('h3', 'car-h3', 'Litros en el depósito por km recorrido'));
+      const kmPts = pts.map(r => r.km - kmSalida);
+      box.append(grafica([
+        { nombre: 'Coche (Alfa)', puntos: pts.map((r, i) => [kmPts[i], r.l]) },
+        { nombre: 'App', puntos: [[0, lSalida], [km, esperado(pr.consumo)]] }
+      ], 0, ' L', null, x => nf(x, 0) + ' km'));
+    }
+    const cc = consumoCoche();
+    box.append(el('p', 'near-meta', cc ? 'La app calcula los costes con tu consumo medio según el coche: ' + nf(cc.l100, 1) + ' L/100 km (' + nf(cc.km, 0) + ' km de los últimos 4 meses).'
+      : 'Cuando el coche haya enviado lecturas de al menos 150 km, la app calculará el consumo con ellas en vez de con los repostajes.'));
+  }
+  (function () {
+    const tabs = $('depTabs');
+    const poner = t => {
+      store.set('depTab', t);
+      tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+      if (store.get('vista') !== 'rep') return;
+      $('sRepostar').hidden = t !== 'calc'; $('sDeposito').hidden = t !== 'dep';
+      if (t === 'dep') pintarDeposito();
+    };
+    tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) poner(b.dataset.t); });
+    const subVistaBase = subVista;
+    subVista = function (sv) {
+      subVistaBase(sv);
+      const enRep = store.get('vista') === 'rep';
+      tabs.hidden = !enRep;
+      if (!enRep) { $('sDeposito').hidden = true; return; }
+      poner(store.get('depTab') === 'dep' ? 'dep' : 'calc');
+    };
+  })();
+
+  // ===== Mis viajes: elegir varios y sumarlos =====
+  let vjSel = null;   // null = sin modo selección; Set de ids
+  function pintarSuma() {
+    const bar = $('vjSuma');
+    if (!vjSel || $('vRep').hidden || $('sViajes').hidden) { bar.hidden = true; return; }
+    bar.hidden = false;
+    const pr = preciosViaje(), sel = viajes.filter(v => vjSel.has(v.id));
+    const km = sel.reduce((s, v) => s + (v.km || 0), 0), min = sel.reduce((s, v) => s + (v.min || 0), 0);
+    let l = 0, eu = 0, em = 0, reales = 0;
+    sel.forEach(v => { const c = costeDe(v, pr); l += c.litros; eu += c.ultimo || 0; em += c.media || 0; if (c.delCoche) reales++; });
+    $('vjSumaTit').textContent = sel.length ? sel.length + (sel.length === 1 ? ' viaje' : ' viajes') + ' · ' + nf(km, km < 100 ? 1 : 0) + ' km · ' + durTxt(min) : 'Toca los viajes que quieras sumar';
+    $('vjSumaTxt').textContent = sel.length ? nf(l, 1) + ' L · ' + (pr.ultimo ? eur(eu) + ' (último depósito)' : '') + (pr.media ? ' · ' + eur(em) + ' (precio medio)' : '') +
+      (km > 0 ? ' · ' + nf(l / km * 100, 1) + ' L/100 km' : '') + (reales ? ' · ' + reales + ' con litros del coche' : '') : '';
+  }
+  $('tabs').addEventListener('click', () => setTimeout(pintarSuma, 0));
+  $('repTabs').addEventListener('click', () => setTimeout(pintarSuma, 0));
+  $('vjSelBtn').addEventListener('click', () => {
+    vjSel = vjSel ? null : new Set();
+    $('vjSelBtn').textContent = vjSel ? 'Terminar' : 'Sumar viajes';
+    pintarViajes(); pintarSuma();
+  });
+  $('vjSumaTodos').addEventListener('click', () => { if (!vjSel) return; const mostrados = viajes.slice(0, 200); const todos = mostrados.every(v => vjSel.has(v.id)); mostrados.forEach(v => todos ? vjSel.delete(v.id) : vjSel.add(v.id)); pintarViajes(); pintarSuma(); });
+  $('vjSumaCerrar').addEventListener('click', () => { vjSel = null; $('vjSelBtn').textContent = 'Sumar viajes'; pintarViajes(); pintarSuma(); });
+  const pintarViajesBase = pintarViajes;
+  pintarViajes = function () {
+    pintarViajesBase();
+    // En modo selección, cada viaje (y cada día) se marca en vez de abrirse
+    const box = $('vjLista');
+    const items = box.querySelectorAll('.vj-item');
+    const lista = viajes.slice(0, 200);
+    items.forEach((b, i) => {
+      const v = lista[i]; if (!v) return;
+      if (vjSel) {
+        b.classList.toggle('sel', vjSel.has(v.id));
+        const nb = b.cloneNode(true);   // quitar el «abrir viaje»
+        nb.addEventListener('click', () => { vjSel.has(v.id) ? vjSel.delete(v.id) : vjSel.add(v.id); nb.classList.toggle('sel', vjSel.has(v.id)); pintarSuma(); });
+        b.replaceWith(nb);
+      }
+      // Marca cuando los litros salen del coche
+      const c = costeDe(v, preciosViaje());
+      if (c.delCoche) { const l3 = (vjSel ? box.querySelectorAll('.vj-item')[i] : b).querySelector('.l3'); if (l3) l3.textContent += ' · ' + nf(c.litros, 0) + ' L según el coche'; }
+    });
+    if (vjSel) box.querySelectorAll('.vj-dia').forEach(d => {
+      d.classList.add('clic');
+      d.onclick = () => {
+        const ids = []; let n = d.nextElementSibling, k = [...box.querySelectorAll('.vj-item')].indexOf(n);
+        while (n && n.classList.contains('vj-item')) { ids.push(lista[k].id); n = n.nextElementSibling; k++; }
+        const todos = ids.every(id => vjSel.has(id));
+        ids.forEach(id => todos ? vjSel.delete(id) : vjSel.add(id));
+        pintarViajes(); pintarSuma();
+      };
+    });
+    pintarSuma();
+  };
+
+  // ===== Radares: siempre apagados; se activan con un botón y se apagan solos al acabar el viaje =====
+  if (MG) {
+    $('radBoton').addEventListener('click', async () => {
+      const on = radNat && radNat.activo;
+      $('radBoton').disabled = true;
+      try {
+        if (on) await MG.llamar('pararRadares');
+        else { const st = await MG.llamar('permisosViajes'); if (!st.permisoGps) { $('radEstado').textContent = 'Sin permiso de ubicación no puedo avisarte.'; return; } await MG.llamar('iniciarRadares'); }
+      } catch (e) { $('radEstado').textContent = 'No se ha podido: ' + (e.message || e); }
+      finally { $('radBoton').disabled = false; setTimeout(() => { pintarRadares(); try { pintarInicio(); } catch (e) {} }, 1200); }
+    });
+    MG.escuchar('accion', d => { if (d && d.accion === 'radares_cambiados') { setTimeout(() => { try { pintarRadares(); } catch (e) {} try { if (!$('vInicio').hidden) pintarInicio(); } catch (e) {} }, 300); } });
+  }  try { if (store.get('vista') === 'rep') subVista('repostar'); else if (store.get('vista') === 'viajes') subVista(store.get('subRep') === 'radares' ? 'radares' : 'viajes'); } catch (e) {}
+
 
   render();
 })();

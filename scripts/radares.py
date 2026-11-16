@@ -183,37 +183,109 @@ def leer_osm(j):
         info = por_dispositivo.get(c["id"], {})
         v = velocidad(tg.get("maxspeed")) or info.get("vmax")
         rb = info.get("rumbo")
-        if rb is None and tg.get("direction", "").replace(".", "").isdigit():
-            rb = round(float(tg["direction"])) % 360
+        # (el «direction» numérico de OSM no se usa: unos lo ponen hacia donde mira la cámara y otros
+        #  el sentido que controla; el sentido sale de la calzada en ajustar_por_via)
         fijos.append({"t": "F", "lat": c["lat"], "lon": c["lon"], "vmax": v, "rumbo": rb, "carretera": tg.get("ref", "")})
     return fijos, tramos
 
 
-def limites_por_via(radares):
-    """Límite de la vía donde está cada radar sin velocidad (consulta a OSM por lotes)."""
-    sin = [r for r in radares if r.get("vmax") is None]
-    print(f"Buscando el límite de la vía para {len(sin)} radares…")
-    for i in range(0, len(sin), 150):
-        lote = sin[i:i + 150]
+HIGHWAYS = "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential"
+
+
+def _segmento_mas_cercano(lat, lon, geom):
+    """(metros, rumbo del segmento en el sentido de los nodos) del tramo de vía más cercano al punto."""
+    mejor = (1e9, None)
+    k = math.cos(math.radians(lat)) * 111320
+    for a, b in zip(geom, geom[1:]):
+        ax, ay = (a["lon"] - lon) * k, (a["lat"] - lat) * 110540
+        bx, by = (b["lon"] - lon) * k, (b["lat"] - lat) * 110540
+        dx, dy = bx - ax, by - ay
+        l2 = dx * dx + dy * dy
+        t = 0 if l2 == 0 else max(0, min(1, -(ax * dx + ay * dy) / l2))
+        d = math.hypot(ax + t * dx, ay + t * dy)
+        if d < mejor[0]:
+            mejor = (d, rumbo(a["lat"], a["lon"], b["lat"], b["lon"]))
+    return mejor
+
+
+def ajustar_por_via(radares):
+    """Mira en OpenStreetMap la carretera de cada radar:
+    - En calzadas de sentido único (autovías y autopistas, con una calzada para cada sentido) el sentido
+      que controla el radar es el de su calzada: esto evita avisar de los radares de la calzada de enfrente.
+    - Si falta el límite, el de esa vía (solo si no hay duda).
+    """
+    print(f"Revisando la vía de {len(radares)} radares…")
+    cambiados = puestos = 0
+    for i in range(0, len(radares), 120):
+        lote = radares[i:i + 120]
         partes = ["[out:json][timeout:300];"]
         for k, r in enumerate(lote):
-            partes.append(f'way(around:20,{r["lat"]},{r["lon"]})["highway"]["maxspeed"];out tags;make sep k={k};out;')
+            partes.append(f'way(around:25,{r["lat"]},{r["lon"]})["highway"~"^({HIGHWAYS})$"];out tags geom;make sep k={k};out;')
         try:
             j = overpass("\n".join(partes))
         except RuntimeError as e:
             print(f"  lote {i}: {e}")
             continue
-        actuales = []
+        vias = []
         for e in j.get("elements", []):
-            if e["type"] == "sep":
-                k = int(e["tags"]["k"])
-                vs = sorted({v for v in (velocidad((w.get("tags") or {}).get("maxspeed")) for w in actuales) if v})
-                if len(vs) == 1:   # solo si no hay duda (cruces con varias vías y límites distintos: se deja sin dato)
-                    lote[k]["vmax"] = vs[0]
-                actuales = []
-            else:
-                actuales.append(e)
+            if e["type"] != "sep":
+                vias.append(e)
+                continue
+            r = lote[int(e["tags"]["k"])]
+            cands = []
+            for w in vias:
+                g = w.get("geometry") or []
+                if len(g) < 2:
+                    continue
+                d, rb = _segmento_mas_cercano(r["lat"], r["lon"], g)
+                tg = w.get("tags") or {}
+                ow = str(tg.get("oneway", "")).lower()
+                unico = ow in ("yes", "true", "1", "-1") or tg.get("highway") in ("motorway", "motorway_link") or tg.get("junction") == "roundabout"
+                if ow == "-1":
+                    rb = (rb + 180) % 360
+                cands.append((d, rb, unico, velocidad(tg.get("maxspeed"))))
+            vias = []
+            if not cands:
+                continue
+            cands.sort()
+            d0, rb0, unico0, v0 = cands[0]
+            if r.get("vmax") is None:
+                vs = {c[3] for c in cands if c[3] and c[0] <= d0 + 8}
+                if len(vs) == 1:
+                    r["vmax"] = vs.pop()
+            if r["t"] != "F" or not unico0 or d0 > 15:
+                continue
+            # ¿Hay otra calzada de sentido contrario casi igual de cerca? Entonces no se sabe cuál es.
+            dudosa = any(c[2] and c[0] - d0 < 4 and abs((c[1] - rb0 + 540) % 360 - 180) > 120 for c in cands[1:])
+            if dudosa:
+                continue   # se queda con el sentido que traía (si lo tenía)
+            if r.get("rumbo") is None:
+                puestos += 1
+            elif abs((r["rumbo"] - rb0 + 540) % 360 - 180) > 60:
+                cambiados += 1
+            r["rumbo"] = round(rb0)
         time.sleep(5)
+    print(f"  Sentido puesto en {puestos} radares y corregido en {cambiados}.")
+
+
+def quitar_repetidos(radares):
+    """El mismo radar en la DGT y en OSM, o dos veces en OSM: a menos de 60 m y mismo sentido."""
+    quedan = []
+    for r in sorted(radares, key=lambda x: (x.get("vmax") is None, x.get("rumbo") is None)):
+        rep_ = False
+        for q in quedan:
+            if q["t"] != r["t"] or abs(q["lat"] - r["lat"]) > 0.001 or abs(q["lon"] - r["lon"]) > 0.0012:
+                continue
+            if dist_m(q["lat"], q["lon"], r["lat"], r["lon"]) > 60:
+                continue
+            a, b = q.get("rumbo"), r.get("rumbo")
+            if a is None or b is None or abs((a - b + 540) % 360 - 180) < 45:
+                rep_ = True
+                break
+        if not rep_:
+            quedan.append(r)
+    print(f"Repetidos quitados: {len(radares) - len(quedan)}")
+    return quedan
 
 
 def unir(dgt, osm_fijos, osm_tramos):
@@ -222,7 +294,7 @@ def unir(dgt, osm_fijos, osm_tramos):
     for r in dgt:
         if r["t"] != "F":
             continue
-        mejor, md = None, 150
+        mejor, md = None, 60   # más lejos podría ser la cámara de la otra calzada
         for i, o in enumerate(osm_fijos):
             if abs(o["lat"] - r["lat"]) > 0.002 or abs(o["lon"] - r["lon"]) > 0.003:
                 continue
@@ -266,7 +338,8 @@ def main():
         return 1
     todos_r = unir(dgt, osm_fijos, osm_tramos)
     if os.environ.get("SIN_LIMITES_VIA") != "1":
-        limites_por_via(todos_r)
+        ajustar_por_via(todos_r)
+    todos_r = quitar_repetidos(todos_r)
     # Si la descarga ha salido rara (muchos menos que la vez anterior), no se pisa el fichero bueno
     try:
         antes = len(json.load(open(SALIDA, encoding="utf-8"))["radares"])
