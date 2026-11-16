@@ -19,6 +19,10 @@ import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+import functools
+
+# Que cada mensaje salga al momento en el registro de GitHub (si no, Python los guarda hasta el final)
+print = functools.partial(print, flush=True)  # noqa: A001
 
 DGT = "https://nap.dgt.es/datex2/dgt/PredefinedLocationsPublication/radares/content.xml"
 OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
@@ -32,16 +36,17 @@ def bajar(url, datos=None, timeout=300):
         return r.read()
 
 
-def overpass(consulta):
+def overpass(consulta, rondas=3, timeout=300):
     ultimo = None
-    for intento in range(3):
+    for intento in range(rondas):
         for url in OVERPASS:
             try:
-                return json.loads(bajar(url, urllib.parse.urlencode({"data": consulta}).encode()))
+                return json.loads(bajar(url, urllib.parse.urlencode({"data": consulta}).encode(), timeout))
             except Exception as e:  # noqa: BLE001
                 ultimo = e
                 print(f"  Overpass {url} falló: {e}")
-        time.sleep(30 * (intento + 1))
+        if intento < rondas - 1:
+            time.sleep(30 * (intento + 1))
     raise RuntimeError(f"Overpass no responde: {ultimo}")
 
 
@@ -215,14 +220,20 @@ def ajustar_por_via(radares):
     - Si falta el límite, el de esa vía (solo si no hay duda).
     """
     print(f"Revisando la vía de {len(radares)} radares…")
-    cambiados = puestos = 0
+    cambiados = puestos = anulados = 0
+    inicio = time.time()
     for i in range(0, len(radares), 120):
+        # Tope de 45 minutos: si OpenStreetMap va lento, los que falten se quedan como venían
+        if time.time() - inicio > 45 * 60:
+            print(f"  Tiempo agotado: {len(radares) - i} radares se quedan sin revisar.")
+            break
+        print(f"  lote {i // 120 + 1}/{(len(radares) + 119) // 120} ({round(time.time() - inicio)} s)")
         lote = radares[i:i + 120]
-        partes = ["[out:json][timeout:300];"]
+        partes = ["[out:json][timeout:180];"]
         for k, r in enumerate(lote):
             partes.append(f'way(around:25,{r["lat"]},{r["lon"]})["highway"~"^({HIGHWAYS})$"];out tags geom;make sep k={k};out;')
         try:
-            j = overpass("\n".join(partes))
+            j = overpass("\n".join(partes), rondas=2, timeout=200)
         except RuntimeError as e:
             print(f"  lote {i}: {e}")
             continue
@@ -253,6 +264,13 @@ def ajustar_por_via(radares):
                 vs = {c[3] for c in cands if c[3] and c[0] <= d0 + 8}
                 if len(vs) == 1:
                     r["vmax"] = vs.pop()
+            # Un sentido que no va ni en una dirección ni en la otra de la vía está mal anotado (le pasaba al
+            # de la A-3 km 247, con 157° en un tramo que va de este a oeste): mejor sin sentido que callado
+            if r["t"] == "F" and r.get("rumbo") is not None and d0 <= 30:
+                dif = abs((r["rumbo"] - rb0 + 540) % 360 - 180)
+                if 40 < dif < 140:
+                    r["rumbo"] = None
+                    anulados += 1
             if r["t"] != "F" or not unico0 or d0 > 15:
                 continue
             # ¿Hay otra calzada de sentido contrario casi igual de cerca? Entonces no se sabe cuál es.
@@ -265,7 +283,7 @@ def ajustar_por_via(radares):
                 cambiados += 1
             r["rumbo"] = round(rb0)
         time.sleep(5)
-    print(f"  Sentido puesto en {puestos} radares y corregido en {cambiados}.")
+    print(f"  Sentido puesto en {puestos} radares, corregido en {cambiados} y quitado en {anulados} (estaba mal).")
 
 
 def quitar_repetidos(radares):
