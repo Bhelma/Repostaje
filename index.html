@@ -464,6 +464,14 @@
   .mas-item small { color: var(--muted); font-size: .92rem; }
   @media (prefers-reduced-motion: reduce) { .mas-info > summary::after, .aj-grupo > summary::after { transition: none; } }
 
+  .vj-mes { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-top: 10px; cursor: pointer; min-height: 52px; }
+  .vj-mes.abierto { border-color: var(--red); }
+  .vj-mes-tx { flex: 1; min-width: 0; }
+  .vj-mes-tx b { display: block; font-size: 1.08rem; }
+  .vj-mes-tx span { display: block; color: var(--muted); font-size: .92rem; font-variant-numeric: tabular-nums; }
+  .vj-mes-fl { color: var(--red); font-size: 1.2rem; }
+  .vj-mes-cont { padding: 0 2px 6px; }
+  .vj-mes-sel { margin-top: 8px; }
   .vj-item.sel { border-color: var(--red); background: var(--red-soft); box-shadow: inset 4px 0 0 var(--red); }
   .vj-dia.clic { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); }
   .vj-suma { position: fixed; left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 25; display: flex; align-items: center; gap: 10px;
@@ -3082,7 +3090,7 @@
     }
     borrados.forEach(id => porId.delete(id));
     viajes = [...porId.values()].filter(v => v && v.id && v.inicio).sort((a, b) => b.inicio.localeCompare(a.inicio));
-    store.set('viajesCache', JSON.stringify(viajes.slice(0, 400)));
+    store.set('viajesCache', JSON.stringify(viajes.slice(0, 3000)));
     pintarViajes();
   }
 
@@ -3115,25 +3123,84 @@
         (pr.ultimo ? ', a ' + nf(pr.ultimo, 3) + ' €/L (último depósito)' : '') + (pr.media ? ' y a ' + nf(pr.media, 3) + ' €/L (tu precio medio).' : '.')
       : '';
 
-    // Lista por días
+    // Lista agrupada por meses (plegables) y días
+    pintarListaViajes(pr);
+  }
+
+  // Cada mes se pliega: así la lista no se hace eterna aunque haya cientos de viajes.
+  // Abierto de primeras solo el mes del último viaje. Si un viaje viene mal, se salta y se avisa al final.
+  function pintarListaViajes(pr) {
     const box = $('vjLista'); box.innerHTML = '';
     if (!viajes.length) { box.append(el('p', 'near-meta', MG ? 'Aún no hay viajes. Aparecerán aquí en cuanto hagas el primero.' : 'Aún no hay viajes guardados.')); return; }
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    let diaPrev = '';
-    viajes.slice(0, 200).forEach(v => {
-      const d = new Date(v.inicio), d0 = new Date(d); d0.setHours(0, 0, 0, 0);
-      const dias = Math.round((hoy - d0) / 864e5);
-      const dia = dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
-      if (dia !== diaPrev) { box.append(el('div', 'vj-dia', dia)); diaPrev = dia; }
-      const c = costeDe(v, pr);
-      const b = el('button', 'vj-item'); b.type = 'button';
-      const l1 = el('div', 'l1'); l1.append(el('span', null, horaDe(v.inicio) + ' → ' + horaDe(v.fin)), el('span', null, nf(v.km, v.km < 100 ? 1 : 0) + ' km'));
-      const ruta = v.origen && v.destino ? v.origen.split(',').pop().trim() + ' → ' + v.destino.split(',').pop().trim() : (v.destino || v.origen || 'Viaje de ' + durTxt(v.min || 0));
-      const costes = [c.ultimo != null ? eur(c.ultimo) + ' (último depósito)' : null, c.media != null ? eur(c.media) + ' (precio medio)' : null].filter(Boolean).join(' · ');
-      b.append(l1, el('div', 'l2', ruta), el('div', 'l3', durTxt(v.min || 0) + (costes ? ' · ' + costes : '')));
-      b.addEventListener('click', () => abrirViaje(v));
-      box.append(b);
+    const ab = pintarListaViajes.abiertos || (pintarListaViajes.abiertos = new Set());
+    const clave = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const meses = []; let cur = null;
+    viajes.forEach(v => {
+      const d = new Date(v.inicio); if (isNaN(d)) return;
+      const k = clave(d);
+      if (!cur || cur.k !== k) { cur = { k, d, vs: [] }; meses.push(cur); }
+      cur.vs.push(v);
     });
+    if (!pintarListaViajes.hecho && meses.length) { pintarListaViajes.hecho = true; ab.add(meses[0].k); }
+    const sel = typeof vjSel !== 'undefined' ? vjSel : null;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const numKm = v => Number(v.km) || 0;
+    let fallos = 0, ultimoFallo = '';
+    meses.forEach(m => {
+      const abierto = ab.has(m.k);
+      let km = 0, euros = 0, hayEur = false, nSel = 0;
+      m.vs.forEach(v => {
+        km += numKm(v);
+        if (sel && sel.has(v.id)) nSel++;
+        try { const c = costeDe(v, pr); if (c.ultimo != null) { euros += c.ultimo; hayEur = true; } } catch (e) {}
+      });
+      const nombre = m.d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(' de ', ' ');
+      const h = el('button', 'vj-mes' + (abierto ? ' abierto' : '')); h.type = 'button';
+      h.setAttribute('aria-expanded', String(abierto));
+      const tx = el('span', 'vj-mes-tx');
+      tx.append(el('b', null, nombre.charAt(0).toUpperCase() + nombre.slice(1)),
+        el('span', null, (m.vs.length === 1 ? '1 viaje' : m.vs.length + ' viajes') + ' · ' + nf(km, 0) + ' km' + (hayEur ? ' · ' + eur(euros) : '') + (nSel ? ' · ' + nSel + ' elegidos' : '')));
+      h.append(tx, el('span', 'vj-mes-fl', abierto ? '▾' : '▸'));
+      h.addEventListener('click', () => { abierto ? ab.delete(m.k) : ab.add(m.k); pintarViajes(); });
+      box.append(h);
+      if (!abierto) return;
+      const cont = el('div', 'vj-mes-cont'); box.append(cont);
+      if (sel) {
+        const todo = m.vs.every(v => sel.has(v.id));
+        const bm = el('button', 'link-btn vj-mes-sel', todo ? 'Quitar el mes entero' : 'Elegir el mes entero'); bm.type = 'button';
+        bm.addEventListener('click', () => { m.vs.forEach(v => todo ? sel.delete(v.id) : sel.add(v.id)); pintarViajes(); });
+        cont.append(bm);
+      }
+      let diaPrev = '', idsDia = null;
+      m.vs.forEach(v => {
+        try {
+          const d = new Date(v.inicio), d0 = new Date(d); d0.setHours(0, 0, 0, 0);
+          const dias = Math.round((hoy - d0) / 864e5);
+          const dia = dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+          if (dia !== diaPrev) {
+            const dv = el('div', 'vj-dia' + (sel ? ' clic' : ''), dia); diaPrev = dia;
+            const ids = idsDia = [];
+            if (sel) dv.addEventListener('click', () => { const todos = ids.every(id => sel.has(id)); ids.forEach(id => todos ? sel.delete(id) : sel.add(id)); pintarViajes(); });
+            cont.append(dv);
+          }
+          idsDia.push(v.id);
+          const c = costeDe(v, pr), k = numKm(v);
+          const b = el('button', 'vj-item' + (sel && sel.has(v.id) ? ' sel' : '')); b.type = 'button';
+          const l1 = el('div', 'l1'); l1.append(el('span', null, horaDe(v.inicio) + (v.fin ? ' → ' + horaDe(v.fin) : '')), el('span', null, nf(k, k < 100 ? 1 : 0) + ' km'));
+          const o = String(v.origen || ''), de = String(v.destino || '');
+          const ruta = o && de ? o.split(',').pop().trim() + ' → ' + de.split(',').pop().trim() : (de || o || 'Viaje de ' + durTxt(Number(v.min) || 0));
+          const costes = [c.ultimo != null ? eur(c.ultimo) + ' (último depósito)' : null, c.media != null ? eur(c.media) + ' (precio medio)' : null].filter(Boolean).join(' · ');
+          b.append(l1, el('div', 'l2', ruta), el('div', 'l3', durTxt(Number(v.min) || 0) + (costes ? ' · ' + costes : '') + (c.delCoche ? ' · ' + nf(c.litros, 0) + ' L según el coche' : '')));
+          b.addEventListener('click', () => {
+            if (!sel) { abrirViaje(v); return; }
+            sel.has(v.id) ? sel.delete(v.id) : sel.add(v.id);
+            pintarViajes();   // también actualiza «N elegidos» del mes y la barra de la suma
+          });
+          cont.append(b);
+        } catch (e) { fallos++; ultimoFallo = e && e.message || String(e); }
+      });
+    });
+    if (fallos) box.append(el('p', 'near-meta car-warn', (fallos === 1 ? 'Un viaje no se ha podido mostrar' : fallos + ' viajes no se han podido mostrar') + ' (' + ultimoFallo + ').'));
   }
 
   // Detalle con la ruta en el mapa
@@ -3204,7 +3271,7 @@
     if (!vjActual || !MG || !confirm('¿Borrar este viaje? También se quita de tu copia en GitHub.')) return;
     try { await MG.llamar('borrarViaje', { id: vjActual.id }); } catch (e) { alert(e.message || e); return; }
     viajes = viajes.filter(x => x.id !== vjActual.id);
-    store.set('viajesCache', JSON.stringify(viajes.slice(0, 400)));
+    store.set('viajesCache', JSON.stringify(viajes.slice(0, 3000)));
     $('vjDlg').close(); pintarViajes();
   });
   $('vjRefrescar').addEventListener('click', () => { if (MG) MG.llamar('subirViajes').catch(() => {}); cargarViajes(true); });
@@ -4292,7 +4359,7 @@
     if (lc == null) return costeDeBase(v, pr);
     return { litros: lc, ultimo: pr.ultimo ? lc * pr.ultimo : null, media: pr.media ? lc * pr.media : null, delCoche: true };
   };
-  const fuenteTxt = pr => pr.fuente === 'coche' ? 'según el coche' : pr.fuente === 'repostajes' ? 'según tus repostajes' : 'aproximado';
+  function fuenteTxt(pr) { return pr.fuente === 'coche' ? 'según el coche' : pr.fuente === 'repostajes' ? 'según tus repostajes' : 'aproximado'; }
 
   // ===== Repostar → Depósito: lo que debería quedar contra lo que dice el coche =====
   function pintarDeposito() {
@@ -4367,13 +4434,13 @@
   })();
 
   // ===== Mis viajes: elegir varios y sumarlos =====
-  let vjSel = null;   // null = sin modo selección; Set de ids
+  var vjSel = null;   // null = sin modo selección; Set de ids (var: la lista lo mira aunque se pinte antes de llegar aquí)
   function pintarSuma() {
     const bar = $('vjSuma');
     if (!vjSel || $('vRep').hidden || $('sViajes').hidden) { bar.hidden = true; return; }
     bar.hidden = false;
     const pr = preciosViaje(), sel = viajes.filter(v => vjSel.has(v.id));
-    const km = sel.reduce((s, v) => s + (v.km || 0), 0), min = sel.reduce((s, v) => s + (v.min || 0), 0);
+    const km = sel.reduce((s, v) => s + (Number(v.km) || 0), 0), min = sel.reduce((s, v) => s + (Number(v.min) || 0), 0);
     let l = 0, eu = 0, em = 0, reales = 0;
     sel.forEach(v => { const c = costeDe(v, pr); l += c.litros; eu += c.ultimo || 0; em += c.media || 0; if (c.delCoche) reales++; });
     $('vjSumaTit').textContent = sel.length ? sel.length + (sel.length === 1 ? ' viaje' : ' viajes') + ' · ' + nf(km, km < 100 ? 1 : 0) + ' km · ' + durTxt(min) : 'Toca los viajes que quieras sumar';
@@ -4387,39 +4454,10 @@
     $('vjSelBtn').textContent = vjSel ? 'Terminar' : 'Sumar viajes';
     pintarViajes(); pintarSuma();
   });
-  $('vjSumaTodos').addEventListener('click', () => { if (!vjSel) return; const mostrados = viajes.slice(0, 200); const todos = mostrados.every(v => vjSel.has(v.id)); mostrados.forEach(v => todos ? vjSel.delete(v.id) : vjSel.add(v.id)); pintarViajes(); pintarSuma(); });
+  $('vjSumaTodos').addEventListener('click', () => { if (!vjSel) return; const ab = pintarListaViajes.abiertos || new Set(); const mostrados = viajes.filter(v => { const d = new Date(v.inicio); return ab.has(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }); const todos = mostrados.every(v => vjSel.has(v.id)); mostrados.forEach(v => todos ? vjSel.delete(v.id) : vjSel.add(v.id)); pintarViajes(); pintarSuma(); });
   $('vjSumaCerrar').addEventListener('click', () => { vjSel = null; $('vjSelBtn').textContent = 'Sumar viajes'; pintarViajes(); pintarSuma(); });
   const pintarViajesBase = pintarViajes;
-  pintarViajes = function () {
-    pintarViajesBase();
-    // En modo selección, cada viaje (y cada día) se marca en vez de abrirse
-    const box = $('vjLista');
-    const items = box.querySelectorAll('.vj-item');
-    const lista = viajes.slice(0, 200);
-    items.forEach((b, i) => {
-      const v = lista[i]; if (!v) return;
-      if (vjSel) {
-        b.classList.toggle('sel', vjSel.has(v.id));
-        const nb = b.cloneNode(true);   // quitar el «abrir viaje»
-        nb.addEventListener('click', () => { vjSel.has(v.id) ? vjSel.delete(v.id) : vjSel.add(v.id); nb.classList.toggle('sel', vjSel.has(v.id)); pintarSuma(); });
-        b.replaceWith(nb);
-      }
-      // Marca cuando los litros salen del coche
-      const c = costeDe(v, preciosViaje());
-      if (c.delCoche) { const l3 = (vjSel ? box.querySelectorAll('.vj-item')[i] : b).querySelector('.l3'); if (l3) l3.textContent += ' · ' + nf(c.litros, 0) + ' L según el coche'; }
-    });
-    if (vjSel) box.querySelectorAll('.vj-dia').forEach(d => {
-      d.classList.add('clic');
-      d.onclick = () => {
-        const ids = []; let n = d.nextElementSibling, k = [...box.querySelectorAll('.vj-item')].indexOf(n);
-        while (n && n.classList.contains('vj-item')) { ids.push(lista[k].id); n = n.nextElementSibling; k++; }
-        const todos = ids.every(id => vjSel.has(id));
-        ids.forEach(id => todos ? vjSel.delete(id) : vjSel.add(id));
-        pintarViajes(); pintarSuma();
-      };
-    });
-    pintarSuma();
-  };
+  pintarViajes = function () { pintarViajesBase(); pintarSuma(); };
 
   // ===== Radares: siempre apagados; se activan con un botón y se apagan solos al acabar el viaje =====
   if (MG) {
